@@ -15,6 +15,7 @@ Added
 - Subagent delegation in `fd-execute` (plans over 3 steps), `fd-verify` and `fd-review` (parallel lenses). Delegates never run above the session model.
 - Trivial-task shortcut (`CONFIRM SKIP`), lesson capture (`lessons.md`).
 - `fd-execute` runs the full suite after every step.
+- Questions use Claude Code's `AskUserQuestion` picker (research gate, clarifying questions, every CONFIRM, topic branch, security and auto-fix, slop, commit, push, resume). Typed answers (`Y`, `CONFIRM`, a revision) still work, and commands fall back to plain text where the tool is missing, as in `claude -p`.
 - README section comparing with upstream.
 
 Changed

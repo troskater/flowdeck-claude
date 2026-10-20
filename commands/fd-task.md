@@ -9,6 +9,8 @@ Pipeline entrypoint. Turns a task description into the four confirmed artifacts 
 
 **Input:** $ARGUMENTS — the task description. REQUIRED.
 
+**Asking.** Every question below goes through the `AskUserQuestion` tool when you have it: 2-4 short options, your recommendation first and labelled `(Recommended)`, free text arriving as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid. If the tool is unavailable (non-interactive runs) or is denied, ask in plain text with the layout shown and wait.
+
 If `$ARGUMENTS` is empty, ask the user for a task description before doing anything else. Do not guess or infer the task.
 
 Codebase mapping runs in the `fd-map` skill, which uses a read-only Explore subagent.
@@ -51,7 +53,7 @@ Proposed queries:
 [C] Use custom queries
 ```
 
-Do not continue until the user answers.
+Do not continue until the user answers. As a question: header `Research`, options `Run these queries (Recommended)`, `Skip research`, `Custom queries`, with the numbered queries in the question text.
 
 - **Y:** run the queries following the `fd-codenav` skill, then Read the matching files. Always also read `architecture.md`, prior `~/.fd-plan/<slug>/*/task.md` files, and `CLAUDE.md` / `AGENTS.md` if present. Summarize in 3-5 bullets.
 - **N:** log "Research skipped by user." and add `Note: created without codebase research — may need revision.` under `## Constraints` in task.md.
@@ -59,7 +61,7 @@ Do not continue until the user answers.
 
 ## Step 3: Clarify, one question at a time
 
-Ask clarifying questions **one at a time**. Do not batch them.
+Ask clarifying questions **one at a time**. Do not batch them. Each is one `AskUserQuestion` call whose options are the realistic answers you found in the code (for example the two plausible behaviors), your recommendation first; an open-ended question has options only if real alternatives exist, otherwise ask it in text.
 
 Skip a question if:
 1. Its answer is already in `architecture.md`, a prior `task.md`, or `STATE.md`
@@ -169,6 +171,8 @@ Type CONFIRM to save, or describe changes needed.
 ```
 
 For a trivial task add: `Trivial task: skip fd-review and fd-verify? Type CONFIRM SKIP to save and skip them, CONFIRM to save and run the full pipeline.`
+
+As a question: header `Artifacts`, options `Confirm (Recommended)` and `Request changes` (the changes arrive as "Other" text); for a trivial task a third option `Confirm and skip review/verify`, which counts as `CONFIRM SKIP`. Show the drafts in your message first, since the question text is short.
 
 Do not write any file before CONFIRM. On requested changes, return to Step 4.
 

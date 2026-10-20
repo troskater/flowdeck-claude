@@ -31,6 +31,8 @@ Or load a local checkout for one session: `claude --plugin-dir <path>`. If your 
 
 **You type only the first command.** As in upstream FlowDeck there are two approval gates: you CONFIRM the artifacts at the end of `fd-task` (before anything is saved), and you CONFIRM at the end of `fd-review` (before any code is written). After that `fd-execute`, `fd-verify` and `fd-done` run on their own. The pipeline stops if a step fails or verification fails, and `fd-done` still asks about the commit message and permission to push. Use `fd-resume` to pick up after stopping. You can also type any stage yourself; each stage checks its own preconditions, so running one out of order is refused.
 
+Questions appear as Claude Code's native picker (recommended option first, "Other" for free text); typing `Y`, `CONFIRM` or a revision works too. Where the picker is unavailable, such as `claude -p`, the same questions are asked in plain text. Claude Code has no task-list tool in the versions checked and plan mode is interactive-only, so FlowDeck uses neither; progress lives in `STATE.md` and the ticks in `plan.md`.
+
 Planning state lives in `~/.fd-plan/<project>/` (`STATE.md`, `checkpoint.json`, and one folder per topic).
 
 ## What it uses from Claude Code

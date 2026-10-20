@@ -9,6 +9,8 @@ Implement the confirmed plan. This is the only stage that opens the code-edit ga
 
 **Input:** $ARGUMENTS — optional `--topic=<slug>` to target a topic other than the active one.
 
+**Asking.** Every question below goes through the `AskUserQuestion` tool when you have it: 2-4 short options, your recommendation first and labelled `(Recommended)`, free text arriving as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid. If the tool is unavailable (non-interactive runs) or is denied, ask in plain text with the layout shown and wait.
+
 After each wave this command calls Claude Code's built-in `code-review` skill.
 
 Not ported in this version: parallel worktree waves and the `--override` and `--keep-worktree` flags. Every step runs sequentially in the main checkout.
@@ -56,7 +58,7 @@ Commits stay local and are never pushed from here. Without this, the security ch
 [Y] yes   [N] no, work stays uncommitted
 ```
 
-Wait for the answer. On Y, run `git switch -c fd/<topic>` (stop and report if the working tree has unrelated changes) and remember the branch name for `topic_branch` below. On N, set `topic_branch` to `null`.
+As a question: header `Branch`, options `Yes, create fd/<topic> (Recommended)` and `No, leave work uncommitted`. Wait for the answer. On Y, run `git switch -c fd/<topic>` (stop and report if the working tree has unrelated changes) and remember the branch name for `topic_branch` below. On N, set `topic_branch` to `null`.
 
 ## Step 3: Open the gate
 

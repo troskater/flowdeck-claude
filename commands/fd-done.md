@@ -9,6 +9,8 @@ Close the task: summarize what was built against what was asked, then commit and
 
 **Input:** $ARGUMENTS — optional `--topic=<slug>` to target a topic other than the active one.
 
+**Asking.** Every question below goes through the `AskUserQuestion` tool when you have it: 2-4 short options, your recommendation first and labelled `(Recommended)`, free text arriving as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid. If the tool is unavailable (non-interactive runs) or is denied, ask in plain text with the layout shown and wait.
+
 ## Step 0: Pre-flight
 
 1. `~/.fd-plan/<slug>/STATE.md` must exist. If not: `No planning workspace. Run /flowdeck:fd-task first.`
@@ -73,7 +75,7 @@ SLOP DETECTED — the diff contains generic artifacts:
   [2] Abort — I will clean it up first
 ```
 
-Wait for the answer. On [2], stop without committing.
+Wait for the answer. On [2], stop without committing. As a question: header `Slop`, options `Proceed anyway` and `Abort, I will clean it up`.
 
 ## Step 4: Commit message
 
@@ -89,7 +91,7 @@ Proposed commit message:
 Use this message, edit it, or type SKIP to stop without committing.
 ```
 
-Wait for the user.
+Wait for the user. As a question: header `Commit`, options `Use this message (Recommended)`, `Keep existing commits, no new one` (when the topic branch already holds the wave commits) and `Skip, do not commit`; an edited message arrives as "Other" text.
 
 ## Step 5: Push?
 
@@ -98,7 +100,7 @@ Push to remote? (yes / no)
 Branch: <current branch> -> <remote>/<branch>
 ```
 
-Wait for the user. If the current branch is the repository's default branch, say so and offer to create a topic branch first. Do not commit directly to the default branch without the user saying to.
+Wait for the user. As a question: header `Push`, options `No, keep it local (Recommended)` and `Yes, push`. If the current branch is the repository's default branch, say so and offer to create a topic branch first. Do not commit directly to the default branch without the user saying to.
 
 ## Step 6: Commit
 

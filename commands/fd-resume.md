@@ -9,6 +9,8 @@ Resume an interrupted FlowDeck session.
 
 **Input:** $ARGUMENTS — pass `--yes` to skip the confirmation pause.
 
+**Asking.** Every question below goes through the `AskUserQuestion` tool when you have it: 2-4 short options, your recommendation first and labelled `(Recommended)`, free text arriving as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid. If the tool is unavailable (non-interactive runs) or is denied, ask in plain text with the layout shown and wait.
+
 ## Steps
 
 1. **Read `~/.fd-plan/<slug>/checkpoint.json`. It is the primary source.** If it exists and `version` is `"1"`, rebuild the summary from `current_command`, `current_stage`, `topic` and `blockers`. If it is missing, unreadable, or has another `version`, fall back to STATE.md and say which source you used.
@@ -41,7 +43,7 @@ Type CONFIRM to resume from this point.
 ═══════════════════════════════════════════════
 ```
 
-6. Unless `--yes` was passed, **wait** for the user to type CONFIRM.
+6. Unless `--yes` was passed, **wait** for the user to type CONFIRM. As a question: header `Resume`, options `Resume from here (Recommended)` and `Stop`.
 
 7. After confirmation:
    - If `blockers` is non-empty, report them and stop. Do not resume into a blocked state.
