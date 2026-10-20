@@ -18,6 +18,11 @@ if (target) {
 }
 
 const slug = (input.cwd ?? process.cwd()).split(/[\\/]/).pop();
+try {
+  if (JSON.parse(readFileSync(join(planRoot, slug, "gate.json"), "utf8")).enabled === false) process.exit(0);
+} catch {
+  // no gate.json: gate stays on
+}
 const statePath = join(planRoot, slug, "checkpoint.json");
 if (!existsSync(statePath)) process.exit(0);
 
@@ -34,7 +39,7 @@ const closed = (command === "fd-done" && stage === "complete") || stage === "can
 const executing = stage === "EXECUTE" || stage === "VERIFY";
 if (closed || executing) process.exit(0);
 
-const reason = `[FlowDeck] Blocked ${input.tool_name}: pipeline is at [${command || "none"} / ${stage}]. Code edits open only in the EXECUTE and VERIFY stages: run /flowdeck:fd-task, /flowdeck:fd-review, then /flowdeck:fd-execute. Set FLOWDECK_DEV_MODE=on to bypass during development.`;
+const reason = `[FlowDeck] Blocked ${input.tool_name}: pipeline is at [${command || "none"} / ${stage}]. Code edits open only in the EXECUTE and VERIFY stages: run /flowdeck:fd-task, /flowdeck:fd-review, then /flowdeck:fd-execute. To turn FlowDeck off for this project, run /flowdeck:fd-gate off.`;
 process.stdout.write(JSON.stringify({
   hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: reason },
 }));

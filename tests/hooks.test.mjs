@@ -101,6 +101,20 @@ test("autosave: stamps open pipelines, leaves closed ones alone", () => {
   assert.equal(JSON.parse(readFileSync(cp, "utf8")).saved_at, "old");
 });
 
+test("fd-gate: gate.json enabled=false turns off the gate and the tool guard", () => {
+  mkdirSync(planDir, { recursive: true });
+  checkpoint("fd-task", "in_progress");
+  assert.equal(gate(code), "deny");
+  assert.equal(guard("Bash", { command: "rm -rf x" }), "deny");
+  const gj = join(planDir, "gate.json");
+  writeFileSync(gj, JSON.stringify({ enabled: false }));
+  assert.equal(gate(code), "allow");
+  assert.equal(guard("Bash", { command: "rm -rf x" }), "allow");
+  writeFileSync(gj, JSON.stringify({ enabled: true }));
+  assert.equal(gate(code), "deny");
+  assert.equal(guard("Bash", { command: "rm -rf x" }), "deny");
+});
+
 test("session-start: silent in a project FlowDeck has not touched", () => {
   rmSync(planDir, { recursive: true, force: true });
   assert.equal(hook("session-start.mjs", {}).stdout, "");

@@ -33,7 +33,7 @@ Compared 2026-10-20 against upstream's `src/commands`, `src/hooks`, `src/service
 | Model config | Per-agent in `flowdeck.json` | See below |
 
 ## Added in this port (closing gaps)
-- `hooks/tool-guard.mjs`: in a FlowDeck project, blocks reading `.env*`, `*.pem`, `*.key`, `*.secret`, writing under `node_modules`, and `rm -rf`. `FLOWDECK_TOOL_GUARD_ENABLED=off` disables it. Upstream applies it to every project; this one only where `~/.fd-plan/<slug>/` exists.
+- `hooks/tool-guard.mjs`: in a FlowDeck project, blocks reading `.env*`, `*.pem`, `*.key`, `*.secret`, writing under `node_modules`, and `rm -rf`. `/flowdeck:fd-gate off` (writes `~/.fd-plan/<slug>/gate.json`) turns off both this guard and the edit gate per project; `FLOWDECK_TOOL_GUARD_ENABLED=off` and `FLOWDECK_DEV_MODE=on` still work. Upstream applies it to every project; this one only where `~/.fd-plan/<slug>/` exists.
 - `hooks/autosave.mjs` (Stop): stamps `saved_at` on an open pipeline's checkpoint. Stage and step data are still model-written; upstream's idle save had the same limit.
 - `fd-status --all` and the fuller status block.
 - `fd-execute` runs the full test suite after each step and undoes a refactor that breaks it.
