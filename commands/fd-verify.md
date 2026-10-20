@@ -86,13 +86,7 @@ Verdict: VERIFIED | NOT VERIFIED
 
 ## Step 6: Go or no-go
 
-**VERIFIED:** set STATE.md `status: verified`, `last_action: <topic> verified — all checks passed`, `next_action: run /flowdeck:fd-done`. Then ask:
-
-```
-Verified. Type CONFIRM to continue to /flowdeck:fd-done, or stop here and resume later with /flowdeck:fd-resume.
-```
-
-Wait for the user. On CONFIRM, invoke the Skill tool with skill `flowdeck:fd-done` and carry on with that stage. Do not start it without the CONFIRM.
+**VERIFIED:** set STATE.md `status: verified`, `last_action: <topic> verified — all checks passed`, `next_action: run /flowdeck:fd-done`. Then continue straight into closing the task: invoke the Skill tool with skill `flowdeck:fd-done` and carry on with that stage. `fd-done` has its own confirmations for the slop check, the commit message and the push, so nothing is committed or pushed without the user. On **NOT VERIFIED** do not continue: present the options below and stop.
 
 **NOT VERIFIED:** set STATE.md `status: not_verified`, list the failures under `blockers`, and print the required fixes. Then offer:
 

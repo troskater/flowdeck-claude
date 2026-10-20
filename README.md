@@ -29,7 +29,7 @@ Or load a local checkout for one session: `claude --plugin-dir <path>`. If your 
 | `fd-checkpoint`, `fd-resume`, `fd-status` | Save, restore and show an in-flight pipeline |
 | `fd-doctor` | Read-only check of what the steps above need: an active LSP server, `origin/HEAD`, a test runner |
 
-**You type only the first command.** Each stage ends by asking you to CONFIRM before it runs the next one: after `fd-task` saves its artifacts, after `fd-review` (its CONFIRM accepts the artifacts and continues), after `fd-execute`, and after a passing `fd-verify`. Stop at any prompt and pick up later with `fd-resume`. You can also type any stage yourself. `fd-done` additionally asks for the commit message and for permission to push. Each stage checks its own preconditions, so running one out of order is refused.
+**You type only the first command.** As in upstream FlowDeck there are two approval gates: you CONFIRM the artifacts at the end of `fd-task` (before anything is saved), and you CONFIRM at the end of `fd-review` (before any code is written). After that `fd-execute`, `fd-verify` and `fd-done` run on their own. The pipeline stops if a step fails or verification fails, and `fd-done` still asks about the commit message and permission to push. Use `fd-resume` to pick up after stopping. You can also type any stage yourself; each stage checks its own preconditions, so running one out of order is refused.
 
 Planning state lives in `~/.fd-plan/<project>/` (`STATE.md`, `checkpoint.json`, and one folder per topic).
 

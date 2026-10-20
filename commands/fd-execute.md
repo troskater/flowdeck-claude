@@ -111,13 +111,7 @@ Keep `current_stage: EXECUTE` until verification starts, so the gate stays open 
 
 When every step is complete, update STATE.md: `status: executed`, `next_action: run /flowdeck:fd-verify`.
 
-Report: steps implemented, test status, review findings, and files changed. Then ask:
-
-```
-Execution finished. Type CONFIRM to continue to /flowdeck:fd-verify, or stop here and resume later with /flowdeck:fd-resume.
-```
-
-Wait for the user. On CONFIRM, invoke the Skill tool with skill `flowdeck:fd-verify` and carry on with that stage. Do not start it without the CONFIRM.
+Report: steps implemented, test status, review findings, and files changed. The plan was approved at the end of `fd-review`, so there is no further gate. When every step is complete and the last wave's review is clean, invoke the Skill tool with skill `flowdeck:fd-verify` and carry on with that stage. If a step failed or any step is still incomplete, stop and report instead.
 
 ## Error handling
 
