@@ -1,5 +1,6 @@
 ---
 description: Verify the implementation — run tests, check regression on affect.md files, review and scan; blocks /flowdeck:fd-done on failure
+disable-model-invocation: true
 argument-hint: [--topic=<slug>]
 ---
 
@@ -9,7 +10,7 @@ Run the verification pipeline for the active topic. `/flowdeck:fd-done` will not
 
 **Input:** $ARGUMENTS — optional `--topic=<slug>` to target a topic other than the active one.
 
-Run this as the orchestrator. Use the `reviewer` and `security-auditor` agents for Step 4.
+Step 4 uses Claude Code's built-in `code-review` and `security-review` skills. This command never runs a substitute of its own.
 
 ## Pre-flight
 
@@ -40,14 +41,22 @@ Read `~/.fd-plan/<slug>/<topic>/affect.md` and take the Affected Files list as t
 
 For each affected file, confirm it has test coverage. An uncovered changed file is a HIGH finding.
 
-Find dependents the plan missed: Grep for each affected file's module path or exported symbol names, and check that the files that reference them have passing tests. Log any dependent that `affect.md` did not list as a planning gap. This check is text-based and does not catch dynamic imports.
+Find dependents the plan missed by following the blast-radius procedure in the `fd-codenav` skill, and check that the files that reference each affected file have passing tests. Log any dependent that `affect.md` did not list as a planning gap. If only Grep was available, say the check is text-based and does not catch dynamic imports.
 
 If `affect.md` is missing, skip this step, record that the regression scope is unknown, and mark the verdict NOT VERIFIED.
 
 ## Step 4: Review and scan
 
-- **Review** (`reviewer` agent): over the files changed since the task began. Check security, quality, conventions, and test coverage of at least 80% for changed files. Below that is a HIGH finding.
-- **Security** (`security-auditor` agent): over the same files. No hardcoded secrets, input validated at trust boundaries, auth on protected routes, and no CRITICAL or HIGH vulnerabilities.
+**Review.** Call the Skill tool with skill `code-review` and args `high`. Never pass `ultra`, `--fix` or `--comment`. Any confirmed bug or CRITICAL/HIGH finding is blocking. The review does not measure coverage: judge the 80% target for changed files from the Step 1 test results, and treat a miss as a HIGH finding.
+
+**Security.** `security-review` diffs `origin/HEAD...`, so it sees only committed work. It also silently receives an empty diff when there is none, and a model will then improvise a review. Guard against that:
+
+1. Run `git rev-parse --verify origin/HEAD`. If it fails, tell the user `git remote set-head origin <default-branch>` fixes it, and ask before running anything.
+2. Run `git diff --name-only origin/HEAD...`. It must list the task's changed files. If it is empty because the work is uncommitted, ask the user to commit it on the topic branch (`topic_branch` in `checkpoint.json`).
+3. Only then call the Skill tool with skill `security-review`. Check that its output names the files and commits it examined. If those sections are empty, treat the check as **NOT RUN** and discard any review that did not come from the skill's own flow.
+4. Any Critical or High finding is blocking.
+
+If the Security check cannot run, its status is **NOT RUN** and the verdict is NOT VERIFIED. The user may accept that risk only by typing `WAIVE`; record the waiver and the reason in `STATE.md`.
 
 ## Step 5: Report
 
@@ -62,7 +71,7 @@ VERIFICATION: <topic>
 | Browser E2E  | PASS / N/A        | [or: not configured] |
 | Regression   | PASS / FAIL       | [uncovered files]  |
 | Code review  | PASS / FAIL       | [summary]          |
-| Security     | PASS / FAIL       | [summary]          |
+| Security     | PASS / FAIL / NOT RUN | [summary]      |
 
 Verdict: VERIFIED | NOT VERIFIED
 ════════════════════════════════════════════════════
@@ -74,6 +83,7 @@ Verdict: VERIFIED | NOT VERIFIED
 - A CRITICAL security finding
 - A CRITICAL review finding
 - An affected file with no test coverage
+- The Security check is NOT RUN and the user has not typed `WAIVE`
 
 ## Step 6: Go or no-go
 

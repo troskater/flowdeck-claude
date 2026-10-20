@@ -9,7 +9,7 @@ Review the artifacts `/flowdeck:fd-task` produced, through two independent lense
 
 **Input:** $ARGUMENTS — optional `--topic=<slug>` to review a topic other than the active one.
 
-Run this as the orchestrator. You do both lenses yourself; no other agent is required.
+You run both lenses yourself, in the main conversation.
 
 ## Step 1: Load artifacts
 
@@ -45,7 +45,7 @@ Be direct. If the premise is weak, say so plainly rather than hedging.
 1. **Architecture quality** — does the design in `architecture.md` fit the project-level `architecture.md`? Does it introduce an abstraction used exactly once?
 2. **Edge cases** — what inputs, states, or failure modes does `plan.md` not handle? Check boundaries, empty or absent values, concurrency, and partial failure.
 3. **Test coverage** — does every acceptance criterion in `task.md` have a step that makes it verifiable? Which steps ship untested behavior?
-4. **Blast radius** — cross-check `affect.md` against the codebase. For each affected file, Grep for files that import or reference it (by module path or symbol name). Flag any dependent the analysis missed, and any task pair marked **Can Parallel** whose file lists actually overlap. Say that this check is text-based: it does not follow transitive or dynamic dependencies.
+4. **Blast radius** — cross-check `affect.md` against the codebase. Re-run the blast-radius procedure from the `fd-codenav` skill on the affected files, and compare it with `affect.md`. Flag any dependent the analysis missed, and any task pair marked **Can Parallel** whose file lists actually overlap. If only Grep was available, say the check is text-based and does not follow transitive or dynamic dependencies.
 
 ## Step 4: Surface findings
 
@@ -98,7 +98,7 @@ Update `~/.fd-plan/<slug>/STATE.md`:
 
 ```
 last_action: Review complete — artifacts confirmed
-next_action: run /flowdeck:fd-execute (not yet ported)
+next_action: run /flowdeck:fd-execute
 ```
 
 Merge into `~/.fd-plan/<slug>/checkpoint.json`, keeping existing keys and setting:
@@ -117,4 +117,4 @@ Merge into `~/.fd-plan/<slug>/checkpoint.json`, keeping existing keys and settin
 
 ## Completion
 
-Report blocking and advisory finding counts, any artifacts revised, and any accepted risks. Next step: `/flowdeck:fd-execute`, which is not ported yet.
+Report blocking and advisory finding counts, any artifacts revised, and any accepted risks. Next step: `/flowdeck:fd-execute`.

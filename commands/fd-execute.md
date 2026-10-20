@@ -1,5 +1,6 @@
 ---
 description: Implement plan.md step by step with a TDD cycle, wave by wave, checkpointing after each wave
+disable-model-invocation: true
 argument-hint: [--topic=<slug>]
 ---
 
@@ -9,9 +10,9 @@ Implement the confirmed plan. This is the only stage that opens the code-edit ga
 
 **Input:** $ARGUMENTS — optional `--topic=<slug>` to target a topic other than the active one.
 
-Run this as the orchestrator. Use the `reviewer` agent after each wave.
+After each wave this command calls Claude Code's built-in `code-review` skill.
 
-Not ported in this version: git worktrees, the `fdx` graph, the `--override` flag, and the `--keep-worktree` flag. Every step runs sequentially in the main checkout.
+Not ported in this version: parallel worktree waves and the `--override` and `--keep-worktree` flags. Every step runs sequentially in the main checkout.
 
 ## Step 1: Guards
 
@@ -37,6 +38,18 @@ Parallel guard: 0 parallel, <N> sequential (worktrees not ported)
   sequential: <Task A>, <Task B>, ...
 ```
 
+## Step 2b: Topic branch
+
+`/flowdeck:fd-verify` runs Claude Code's `security-review`, which only sees work that is **committed** on a branch that differs from `origin/HEAD`. Ask once:
+
+```
+Create branch fd/<topic> and commit after each wave?
+Commits stay local and are never pushed from here. Without this, the security check in /flowdeck:fd-verify cannot run.
+[Y] yes   [N] no, work stays uncommitted
+```
+
+Wait for the answer. On Y, run `git switch -c fd/<topic>` (stop and report if the working tree has unrelated changes) and remember the branch name for `topic_branch` below. On N, set `topic_branch` to `null`.
+
 ## Step 3: Open the gate
 
 Only now, with guards passed and the guard decision logged, update `~/.fd-plan/<slug>/checkpoint.json` (keep the existing keys):
@@ -46,6 +59,7 @@ Only now, with guards passed and the guard decision logged, update `~/.fd-plan/<
   "current_command": "fd-execute",
   "current_stage": "EXECUTE",
   "topic": "<topic>",
+  "topic_branch": "fd/<topic> or null",
   "saved_at": "<ISO timestamp>"
 }
 ```
@@ -72,7 +86,13 @@ A bugfix step writes a regression test that reproduces the bug first, and Green 
 
 ## Step 5: Wave review
 
-After each wave, run the `reviewer` agent over the files changed in that wave. Fix any CRITICAL or HIGH finding before moving to the next wave. Missing or weak tests are HIGH.
+After each wave:
+
+1. If `topic_branch` is set, commit the wave: `git add` the files changed in the wave (never `git add -A`), then `git commit -m "fd(<topic>): wave <N>"`. Never push.
+2. Call the Skill tool with skill `code-review` and args `high`. It reviews the current diff, including uncommitted work. Never pass `ultra` (a billed cloud review), `--fix` or `--comment`.
+3. Fix any confirmed bug or CRITICAL/HIGH finding before the next wave. Missing or weak tests count as HIGH, since the review does not measure coverage.
+
+If the Skill call is refused or errors, say so, stop and ask the user. Do not substitute your own review and present it as the built-in one.
 
 Then update `checkpoint.json`:
 
@@ -92,10 +112,10 @@ Keep `current_stage: EXECUTE` until verification starts, so the gate stays open 
 
 When every step is complete, update STATE.md: `status: executed`, `next_action: run /flowdeck:fd-verify`.
 
-Report: steps implemented, test status, reviewer findings, and files changed. Next step: `/flowdeck:fd-verify`.
+Report: steps implemented, test status, review findings, and files changed. Next step: `/flowdeck:fd-verify`.
 
 ## Error handling
 
 - A test will not go red for a step that should fail: stop and report. Do not write the production code.
-- The reviewer finds a CRITICAL issue: return to Green for that step.
+- The review finds a CRITICAL issue: return to Green for that step.
 - Any error mid-wave: report it, leave STATE.md at the last completed step, and do not mark the step complete.

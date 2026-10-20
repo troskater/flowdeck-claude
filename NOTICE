@@ -5,12 +5,12 @@ This project is a port of FlowDeck, an OpenCode plugin by Dang Van Nghiem
 (https://github.com/DVNghiem/FlowDeck), used under the MIT License.
 
 Taken from upstream, with edits where noted:
-- skills/            30 of upstream's 42 skills, copied unchanged
+- skills/            30 of upstream's 42 skills; 28 copied unchanged, 2 adapted from fdx to LSP/Grep (research-first, context-budget)
 - rules/             upstream's rules, minus the OpenCode-specific agent-orchestration rule
 - commands/ agents/  rewritten for Claude Code from upstream's command and agent prompts
 
 Not taken: upstream's Rust fdx CLI. This port uses Claude Code's own tools instead.
 
-Written for this port: hooks/, tests/, and the plugin and marketplace manifests.
+Written for this port: hooks/, tests/, skills/fd-codenav, skills/fd-map, and the plugin and marketplace manifests.
 
 The upstream copyright and license text are kept in LICENSE.

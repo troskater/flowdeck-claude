@@ -1,5 +1,6 @@
 ---
 description: Close the task — summarize built vs required, then commit and push on confirmation
+disable-model-invocation: true
 argument-hint: [--topic=<slug>]
 ---
 
@@ -8,8 +9,6 @@ argument-hint: [--topic=<slug>]
 Close the task: summarize what was built against what was asked, then commit and, if you approve, push.
 
 **Input:** $ARGUMENTS — optional `--topic=<slug>` to target a topic other than the active one.
-
-Run this as the orchestrator.
 
 ## Step 0: Pre-flight
 
@@ -101,6 +100,15 @@ Branch: <current branch> -> <remote>/<branch>
 Wait for the user. If the current branch is the repository's default branch, say so and offer to create a topic branch first. Do not commit directly to the default branch without the user saying to.
 
 ## Step 6: Commit
+
+If `topic_branch` in `checkpoint.json` is set, `/flowdeck:fd-execute` already committed each wave to that branch. Show `git log --oneline origin/HEAD..HEAD` and offer:
+
+```
+  [1] Keep the wave commits as they are
+  [2] Squash them into the single commit from Step 4
+```
+
+Squash only on [2]: `git reset --soft $(git merge-base origin/HEAD HEAD)`, then commit with the confirmed message. The staging steps below then cover only uncommitted leftovers.
 
 Stage only the changed files from Step 2. Do not use `git add -A`. Then:
 

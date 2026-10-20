@@ -11,7 +11,7 @@ Pipeline entrypoint. Turns a task description into the four confirmed artifacts 
 
 If `$ARGUMENTS` is empty, ask the user for a task description before doing anything else. Do not guess or infer the task.
 
-Run this as the orchestrator. Delegate codebase mapping to the `mapper` agent.
+Codebase mapping runs in the `fd-map` skill, which uses a read-only Explore subagent.
 
 ## Step 1: Auto-init
 
@@ -26,7 +26,7 @@ If `~/.fd-plan/<slug>/` does not exist:
    next_action: complete fd-task steps
    ```
 2. Write `checkpoint.json` with `"current_command": "fd-task"` and `"current_stage": "in_progress"`.
-3. Delegate to `mapper` to map the codebase: tech stack, module layout, entry points, conventions, dependencies. Write the result to `~/.fd-plan/<slug>/architecture.md`. This file is project-level context. It is not the task's design: Step 6 writes the task's own `architecture.md` under `<topic>/`.
+3. Invoke the `fd-map` skill through the Skill tool to map the codebase. Write the summary it returns to `~/.fd-plan/<slug>/architecture.md`. This file is project-level context. It is not the task's design: Step 6 writes the task's own `architecture.md` under `<topic>/`.
 
 If codebase mapping fails, report the failure and stop. A task planned against an unmapped codebase is not trustworthy.
 
@@ -53,7 +53,7 @@ Proposed queries:
 
 Do not continue until the user answers.
 
-- **Y:** run the queries with Grep and Glob, then Read the matching files. Always also read `architecture.md`, prior `~/.fd-plan/<slug>/*/task.md` files, and `CLAUDE.md` / `AGENTS.md` if present. Summarize in 3-5 bullets.
+- **Y:** run the queries following the `fd-codenav` skill, then Read the matching files. Always also read `architecture.md`, prior `~/.fd-plan/<slug>/*/task.md` files, and `CLAUDE.md` / `AGENTS.md` if present. Summarize in 3-5 bullets.
 - **N:** log "Research skipped by user." and add `Note: created without codebase research — may need revision.` under `## Constraints` in task.md.
 - **C:** ask for the queries one per line, use them exactly as given, then run them as in Y.
 
@@ -122,6 +122,7 @@ Draft all four before showing anything. Every claim must trace to Step 2 evidenc
 ```md
 # Affect Analysis
 Generated: <ISO timestamp>
+Source: LSP | Grep (text-based; misses dynamic imports and generated code)
 
 ## Affected Files
 - path/to/file (modify|create|delete)
@@ -139,7 +140,7 @@ low | medium | high
 - Task C (depends on A): [file1, file3]
 ```
 
-Find affected files with Grep for the symbols and paths the task touches, and state in the file that this is an approximation: no dependency graph was built. Every task in `plan.md` appears exactly once under Can Parallel or Must Sequential. A task goes under Must Sequential if its files overlap another task's files or it depends on one. Risk is `high` for security, schema or breaking changes, `medium` for shared modules or public API, otherwise `low`.
+Find the affected files and their dependents by following the blast-radius procedure in the `fd-codenav` skill, and fill in the `Source:` line honestly. Every task in `plan.md` appears exactly once under Can Parallel or Must Sequential. A task goes under Must Sequential if its files overlap another task's files or it depends on one. Risk is `high` for security, schema or breaking changes, `medium` for shared modules or public API, otherwise `low`.
 
 **`plan.md`**
 ```md

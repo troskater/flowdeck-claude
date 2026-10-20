@@ -9,8 +9,6 @@ Resume an interrupted FlowDeck session.
 
 **Input:** $ARGUMENTS — pass `--yes` to skip the confirmation pause.
 
-Run this as the orchestrator.
-
 ## Steps
 
 1. **Read `~/.fd-plan/<slug>/checkpoint.json`. It is the primary source.** If it exists and `version` is `"1"`, rebuild the summary from `current_command`, `current_stage`, `topic` and `blockers`. If it is missing, unreadable, or has another `version`, fall back to STATE.md and say which source you used.
@@ -47,7 +45,7 @@ Type CONFIRM to resume from this point.
 
 7. After confirmation:
    - If `blockers` is non-empty, report them and stop. Do not resume into a blocked state.
-   - Otherwise re-run `current_command`, and let its own guards decide what to skip. Do not replay steps already in `steps_complete`.
+   - Otherwise tell the user which command to run: `/flowdeck:<current_command>`. Pipeline commands are user-invoked only, so do not start it yourself. Say what it will pick up; its own guards skip finished work and steps already in `steps_complete`.
    - If the checkpoint was missing, use STATE.md: `plan_confirmed: true` with unfinished steps resumes at `/flowdeck:fd-execute`; no plan starts at `/flowdeck:fd-task`.
    - Say what the next step is before starting it.
 
