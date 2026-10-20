@@ -199,4 +199,4 @@ Merge into `~/.fd-plan/<slug>/checkpoint.json`. Keep the existing keys and set:
 
 ## Completion
 
-Report the topic slug, the four artifact paths, requirement count, risk level, and the parallel/sequential split. Next step: `/flowdeck:fd-review` (not yet ported).
+Report the topic slug, the four artifact paths, requirement count, risk level, and the parallel/sequential split. Next step: `/flowdeck:fd-review`.
