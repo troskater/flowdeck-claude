@@ -49,6 +49,8 @@ Changed files: <N>
 ════════════════════════════════════════════════════
 ```
 
+If `security_check` in STATE.md is `skipped`, add a line under the box: `Security audit was skipped at verification. No security review was done on these changes.`
+
 Report gaps honestly. State a dropped or deferred requirement as such. Never omit it quietly.
 
 ## Step 3: Slop check

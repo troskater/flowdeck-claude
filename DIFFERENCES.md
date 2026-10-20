@@ -37,6 +37,7 @@ Compared 2026-10-20 against upstream's `src/commands`, `src/hooks`, `src/service
 - `hooks/autosave.mjs` (Stop): stamps `saved_at` on an open pipeline's checkpoint. Stage and step data are still model-written; upstream's idle save had the same limit.
 - `fd-status --all` and the fuller status block.
 - `fd-execute` runs the full test suite after each step and undoes a refactor that breaks it.
+- `fd-verify` asks whether to run the security audit (recorded as `security_check`, flagged again in `fd-done`) and, on NOT VERIFIED, makes up to two automatic fix-and-rerun attempts. Upstream only offered "fix and re-run" as a manual option, and always ran the security scan.
 
 ## Model policy
 Spike results (2026-10-20, `claude -p --model sonnet`): `model:` in a chained skill's or command's frontmatter does **not** switch the model (all reported `claude-sonnet-5-5`). The `Agent` tool's `model` parameter does (an opus session ran a sonnet subagent), and a forked skill with `model: haiku` does (`fd-map`).
