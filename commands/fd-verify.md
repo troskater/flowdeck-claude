@@ -19,6 +19,8 @@ Run this as the orchestrator. Use the `reviewer` and `security-auditor` agents f
 
 ## Step 1: Tests
 
+Read the stage rules listed in the "FlowDeck rules" section of the session context first (testing, security, language patterns). Judge Step 4 against them.
+
 Detect the runner from the project manifest: `npm test` or `bun test` for Node, `cargo test` for Rust, `pytest` for Python, `go test ./...` for Go. Run the full suite.
 
 All tests must pass, with no failures and no unexplained skips.

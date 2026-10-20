@@ -54,6 +54,8 @@ Update `STATE.md`: `status: executing`, `last_action: Execution started`.
 
 ## Step 4: Run each step through the TDD cycle
 
+Before the first step, read the stage rules listed in the "FlowDeck rules" section of the session context (testing, coding style, security, git workflow, and the language patterns for this project). If that section is missing, the session started before FlowDeck was initialized here: read `rules/common/` and the matching language file from the plugin directory instead.
+
 Work through `plan.md` wave by wave, and within a wave one step at a time, in the order the plan gives. Skip any step already listed as complete in STATE.md.
 
 For each step:

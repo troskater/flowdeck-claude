@@ -1,5 +1,6 @@
-// Gatekeeper: blocks code writes until the pipeline reaches EXECUTE or VERIFY.
-// shortcut: reads only checkpoint.json under ~/.fd-plan, not STATE.md. upgrade: share the STATE.md reader from lib/.
+// Gatekeeper: while a FlowDeck pipeline is active, blocks code writes until EXECUTE or VERIFY.
+// Projects with no checkpoint, or a closed pipeline, are never gated.
+// shortcut: reads only checkpoint.json under ~/.fd-plan, not STATE.md. upgrade: share a STATE.md reader from lib/.
 import { readFileSync, existsSync } from "node:fs";
 import { join, resolve, relative, isAbsolute } from "node:path";
 import { homedir } from "node:os";
@@ -18,19 +19,22 @@ if (target) {
 
 const slug = (input.cwd ?? process.cwd()).split(/[\\/]/).pop();
 const statePath = join(planRoot, slug, "checkpoint.json");
+if (!existsSync(statePath)) process.exit(0);
 
-let stage = "INIT";
-if (existsSync(statePath)) {
-  try {
-    stage = JSON.parse(readFileSync(statePath, "utf8")).current_stage ?? "INIT";
-  } catch {
-    stage = "INIT";
-  }
+let cp = {};
+try {
+  cp = JSON.parse(readFileSync(statePath, "utf8"));
+} catch {
+  // unreadable checkpoint in a FlowDeck project: fail closed
 }
+const command = cp.current_command ?? "";
+const stage = cp.current_stage ?? "INIT";
 
-if (stage === "EXECUTE" || stage === "VERIFY") process.exit(0);
+const closed = (command === "fd-done" && stage === "complete") || stage === "cancelled";
+const executing = stage === "EXECUTE" || stage === "VERIFY";
+if (closed || executing) process.exit(0);
 
-const reason = `[FlowDeck] Blocked ${input.tool_name}: stage is [${stage}]. Code edits open only in the EXECUTE and VERIFY stages: run /flowdeck:fd-task, /flowdeck:fd-review, then /flowdeck:fd-execute. Set FLOWDECK_DEV_MODE=on to bypass during development.`;
+const reason = `[FlowDeck] Blocked ${input.tool_name}: pipeline is at [${command || "none"} / ${stage}]. Code edits open only in the EXECUTE and VERIFY stages: run /flowdeck:fd-task, /flowdeck:fd-review, then /flowdeck:fd-execute. Set FLOWDECK_DEV_MODE=on to bypass during development.`;
 process.stdout.write(JSON.stringify({
   hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: reason },
 }));

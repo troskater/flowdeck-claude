@@ -1,0 +1,16 @@
+﻿FlowDeck for Claude Code
+Copyright (c) 2026 troskater
+
+This project is a port of FlowDeck, an OpenCode plugin by Dang Van Nghiem
+(https://github.com/DVNghiem/FlowDeck), used under the MIT License.
+
+Taken from upstream, with edits where noted:
+- skills/            30 of upstream's 42 skills, copied unchanged
+- rules/             upstream's rules, minus the OpenCode-specific agent-orchestration rule
+- commands/ agents/  rewritten for Claude Code from upstream's command and agent prompts
+
+Not taken: upstream's Rust fdx CLI. This port uses Claude Code's own tools instead.
+
+Written for this port: hooks/, tests/, and the plugin and marketplace manifests.
+
+The upstream copyright and license text are kept in LICENSE.
