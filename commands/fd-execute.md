@@ -13,9 +13,14 @@ After each wave this command calls Claude Code's built-in `code-review` skill.
 
 Not ported in this version: parallel worktree waves and the `--override` and `--keep-worktree` flags. Every step runs sequentially in the main checkout.
 
-## Model
+## Delegation
 
-Your own model is the ceiling for anything you delegate. If you are running on Opus, run each step's TDD cycle (Step 4) in one foreground `Agent` call with `model: "sonnet"`, passing it the step text, the relevant files and the rules; it returns what it changed and the test result. You keep the guards, the wave review and the state updates. If it reports it cannot state a step's behavior, ask the user yourself. On any other model, do the steps yourself.
+A subagent keeps test output and file reads out of this conversation, but it starts with a large context of its own, so it only pays off on longer plans. If `plan.md` has more than 3 steps, run each step's TDD cycle (Step 4) in one foreground `Agent` call (`subagent_type: general-purpose`); with 3 steps or fewer, do the steps yourself.
+
+- **Model:** your own model is the ceiling. On Opus pass `model: "sonnet"`; on any other model omit `model` so it inherits yours.
+- **Brief:** the subagent cannot see this conversation. Give it the step text, its acceptance cases from `task.md`, the files from `plan.md`/`affect.md`, the paths of the stage rules, the Step 4 cycle, and this instruction: never push, never commit, never touch `~/.fd-plan/`, and if the step's behavior is unclear return the question instead of guessing.
+- **Result:** ask for files changed, test command and result, and any open question. Do not accept "tests pass" on its word: run the full suite yourself before recording the step complete. If it returns a question, ask the user.
+- **You keep** the guards, the topic branch, the wave commit and review, and all STATE.md and checkpoint updates.
 
 ## Step 1: Guards
 

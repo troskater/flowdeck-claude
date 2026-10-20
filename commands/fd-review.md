@@ -9,7 +9,7 @@ Review the artifacts `/flowdeck:fd-task` produced, through two independent lense
 
 **Input:** $ARGUMENTS — optional `--topic=<slug>` to review a topic other than the active one.
 
-You run both lenses yourself, in the main conversation.
+Run the two lenses (Steps 2 and 3) as two foreground `Agent` calls (`subagent_type: Explore`, read-only) sent in the same message so they run in parallel. Omit `model` so they inherit yours: judgment work stays on your model. A lens that did not write the plan does not anchor on it. Each subagent cannot see this conversation, so brief it with the lens text, the topic's four artifact paths plus the project `architecture.md`, and ask for findings only, each marked blocking or advisory with its evidence. You merge the results into the Step 4 report and handle Step 5 yourself. If a subagent call fails, run that lens yourself.
 
 ## Step 1: Load artifacts
 

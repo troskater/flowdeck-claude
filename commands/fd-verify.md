@@ -36,9 +36,11 @@ Reply e.g. "Y Y".
 
 Wait for the answer, then record `security_check: on|skipped` and `auto_fix: on|off` in STATE.md. Step 4 runs the security part only when `security_check` is `on`; the fix loop runs only when `auto_fix` is `on`.
 
-## Model
+## Delegation
 
-Your own model is the ceiling for anything you delegate. If you are running on Opus, run Steps 1-3 in one foreground `Agent` call with `model: "sonnet"` and have it return the raw results (test output, coverage per file, unlisted dependents); you keep Step 4 and the verdict. On any other model, run the steps yourself.
+Run Steps 1-3 in one foreground `Agent` call (`subagent_type: general-purpose`) so test logs stay out of this conversation. It returns only: pass/fail per check, the failing test names with the first lines of each error, coverage per affected file, and dependents `affect.md` missed. You keep Step 4, the report and the verdict.
+
+Your own model is the ceiling: on Opus pass `model: "sonnet"`; on any other model omit `model` so it inherits yours. The subagent cannot see this conversation, so brief it with the topic, the paths of `affect.md` and the stage rules, and the Step 1-3 text. It must not edit files. If it cannot run the suite (no runner), it says so and you report that; never pass by default.
 
 ## Step 1: Tests
 
@@ -120,7 +122,7 @@ Only when `auto_fix` is `on` (otherwise go straight to the options below). The u
 Fix automatically: failing tests, confirmed review bugs and CRITICAL/HIGH findings, security Critical/High findings, and affected files with no test (write the test). Do not fix automatically, and stop the loop: no test runner, security NOT RUN, missing `affect.md`, or a fix that needs a change outside `plan.md`'s scope or a new requirement.
 
 Per attempt:
-1. Fix each blocker at its root cause, test first for a bug.
+1. Fix each blocker at its root cause, test first for a bug. Delegate the fix to one foreground `Agent` (model rule as in Delegation) with the failing output, the files involved and the stage rules, and tell it not to commit or push; you review its diff summary before committing.
 2. If `topic_branch` is set, commit the fix: `git add` only the files you changed, `git commit -m "fd(<topic>): verify fix <n>"`. Never push.
 3. Re-run Step 1 (full suite) and every check that failed. Re-run `code-review` and, if enabled, `security-review` whenever code changed, since a fix can introduce new findings.
 4. Print the Step 5 table again and say what attempt this was.

@@ -45,5 +45,5 @@ Spike results (2026-10-20, `claude -p --model sonnet`): `model:` in a chained sk
 So stages cannot be pinned, and the rule is: **a delegate never runs above the session model.**
 - Stages run on the session model.
 - `fd-map` always runs on haiku.
-- On Opus, `fd-execute` runs each step's TDD cycle, and `fd-verify` runs tests and regression, in a `model: "sonnet"` subagent. Planning, review, verdicts and `fd-done` stay on Opus.
-- On Sonnet or Haiku nothing is delegated upward or sideways; everything stays on the session model, apart from the haiku map.
+- Delegation (also a context saver, not only a cost one): `fd-execute` runs each step in a subagent when the plan has more than 3 steps, `fd-verify` runs its tests/regression and each fix attempt in a subagent, and `fd-review` runs its two lenses as parallel read-only subagents. Delegates inherit the session model, except that on Opus the execute and verify workers use sonnet. Review lenses always inherit. Measured: a general-purpose subagent starts at about 97k tokens (mostly the user setup), about 70% cache-read once warm.
+- On Sonnet or Haiku nothing is delegated to a different model; everything stays on the session model, apart from the haiku map.
