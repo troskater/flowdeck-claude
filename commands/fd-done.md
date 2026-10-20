@@ -1,6 +1,5 @@
 ---
-description: Close the task — summarize built vs required, then commit and push on confirmation
-disable-model-invocation: true
+description: FlowDeck pipeline stage. Close the task by summarizing built vs required, then commit and push only on confirmation. Run only when continuing the pipeline after fd-verify, or when the user names /flowdeck:fd-done.
 argument-hint: [--topic=<slug>]
 ---
 

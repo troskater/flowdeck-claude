@@ -1,6 +1,5 @@
 ---
-description: Implement plan.md step by step with a TDD cycle, wave by wave, checkpointing after each wave
-disable-model-invocation: true
+description: FlowDeck pipeline stage. Implement plan.md step by step with a TDD cycle, wave by wave, checkpointing after each wave. Run only when continuing the pipeline after fd-review, or when the user names /flowdeck:fd-execute.
 argument-hint: [--topic=<slug>]
 ---
 
@@ -112,7 +111,13 @@ Keep `current_stage: EXECUTE` until verification starts, so the gate stays open 
 
 When every step is complete, update STATE.md: `status: executed`, `next_action: run /flowdeck:fd-verify`.
 
-Report: steps implemented, test status, review findings, and files changed. Next step: `/flowdeck:fd-verify`.
+Report: steps implemented, test status, review findings, and files changed. Then ask:
+
+```
+Execution finished. Type CONFIRM to continue to /flowdeck:fd-verify, or stop here and resume later with /flowdeck:fd-resume.
+```
+
+Wait for the user. On CONFIRM, invoke the Skill tool with skill `flowdeck:fd-verify` and carry on with that stage. Do not start it without the CONFIRM.
 
 ## Error handling
 

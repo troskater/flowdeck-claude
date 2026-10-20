@@ -45,7 +45,7 @@ Type CONFIRM to resume from this point.
 
 7. After confirmation:
    - If `blockers` is non-empty, report them and stop. Do not resume into a blocked state.
-   - Otherwise tell the user which command to run: `/flowdeck:<current_command>`. Pipeline commands are user-invoked only, so do not start it yourself. Say what it will pick up; its own guards skip finished work and steps already in `steps_complete`.
+   - Otherwise invoke the Skill tool with skill `flowdeck:<current_command>` (the CONFIRM in step 6 is the approval) and carry on with that stage. Its own guards skip finished work and steps already in `steps_complete`.
    - If the checkpoint was missing, use STATE.md: `plan_confirmed: true` with unfinished steps resumes at `/flowdeck:fd-execute`; no plan starts at `/flowdeck:fd-task`.
    - Say what the next step is before starting it.
 

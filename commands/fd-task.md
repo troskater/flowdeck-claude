@@ -199,4 +199,10 @@ Merge into `~/.fd-plan/<slug>/checkpoint.json`. Keep the existing keys and set:
 
 ## Completion
 
-Report the topic slug, the four artifact paths, requirement count, risk level, and the parallel/sequential split. Next step: `/flowdeck:fd-review`.
+Report the topic slug, the four artifact paths, requirement count, risk level, and the parallel/sequential split. Then ask:
+
+```
+Artifacts saved. Type CONFIRM to continue to /flowdeck:fd-review, or stop here and resume later with /flowdeck:fd-resume.
+```
+
+Wait for the user. On CONFIRM, invoke the Skill tool with skill `flowdeck:fd-review` and carry on with that stage. Do not start it without the CONFIRM.

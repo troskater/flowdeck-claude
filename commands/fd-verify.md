@@ -1,6 +1,5 @@
 ---
-description: Verify the implementation — run tests, check regression on affect.md files, review and scan; blocks /flowdeck:fd-done on failure
-disable-model-invocation: true
+description: FlowDeck pipeline stage. Verify the implementation by running tests, checking regression on affect.md files, then review and security scan; blocks /flowdeck:fd-done on failure. Run only when continuing the pipeline after fd-execute, or when the user names /flowdeck:fd-verify.
 argument-hint: [--topic=<slug>]
 ---
 
@@ -87,7 +86,13 @@ Verdict: VERIFIED | NOT VERIFIED
 
 ## Step 6: Go or no-go
 
-**VERIFIED:** set STATE.md `status: verified`, `last_action: <topic> verified — all checks passed`, `next_action: run /flowdeck:fd-done`.
+**VERIFIED:** set STATE.md `status: verified`, `last_action: <topic> verified — all checks passed`, `next_action: run /flowdeck:fd-done`. Then ask:
+
+```
+Verified. Type CONFIRM to continue to /flowdeck:fd-done, or stop here and resume later with /flowdeck:fd-resume.
+```
+
+Wait for the user. On CONFIRM, invoke the Skill tool with skill `flowdeck:fd-done` and carry on with that stage. Do not start it without the CONFIRM.
 
 **NOT VERIFIED:** set STATE.md `status: not_verified`, list the failures under `blockers`, and print the required fixes. Then offer:
 

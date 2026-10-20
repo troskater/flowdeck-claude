@@ -29,7 +29,7 @@ Or load a local checkout for one session: `claude --plugin-dir <path>`. If your 
 | `fd-checkpoint`, `fd-resume`, `fd-status` | Save, restore and show an in-flight pipeline |
 | `fd-doctor` | Read-only check of what the steps above need: an active LSP server, `origin/HEAD`, a test runner |
 
-`fd-execute`, `fd-verify` and `fd-done` are user-invoked only; Claude will not start them on its own.
+**You type only the first command.** Each stage ends by asking you to CONFIRM before it runs the next one: after `fd-task` saves its artifacts, after `fd-review` (its CONFIRM accepts the artifacts and continues), after `fd-execute`, and after a passing `fd-verify`. Stop at any prompt and pick up later with `fd-resume`. You can also type any stage yourself. `fd-done` additionally asks for the commit message and for permission to push. Each stage checks its own preconditions, so running one out of order is refused.
 
 Planning state lives in `~/.fd-plan/<project>/` (`STATE.md`, `checkpoint.json`, and one folder per topic).
 

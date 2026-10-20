@@ -81,7 +81,7 @@ A finding is **blocking** when it would make the implementation wrong, unsafe, o
 Print:
 
 ```
-Type CONFIRM to accept these artifacts,
+Type CONFIRM to accept these artifacts and continue to /flowdeck:fd-execute,
 or describe the revisions you want.
 ```
 
@@ -117,4 +117,4 @@ Merge into `~/.fd-plan/<slug>/checkpoint.json`, keeping existing keys and settin
 
 ## Completion
 
-Report blocking and advisory finding counts, any artifacts revised, and any accepted risks. Next step: `/flowdeck:fd-execute`.
+Report blocking and advisory finding counts, any artifacts revised, and any accepted risks. The CONFIRM in Step 5 is also the approval to continue: once the state and checkpoint are written, invoke the Skill tool with skill `flowdeck:fd-execute` and carry on with that stage. If the user did not CONFIRM, stop here.
