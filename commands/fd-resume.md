@@ -17,7 +17,7 @@ Resume an interrupted FlowDeck session.
 
 3. Read STATE.md for anything the checkpoint does not carry: `last_updated`, `plan_confirmed`, `steps_complete`.
 
-4. If `~/.fd-plan/<slug>/<topic>/plan.md` exists, show its first 10 lines. If `task.md` exists, show the requirement count.
+4. If `~/.fd-plan/<slug>/<topic>/plan.md` exists, show its first 10 lines. If `task.md` exists, show the requirement count: the number of lines that start with `- R-` followed by digits.
 
 5. Present:
 

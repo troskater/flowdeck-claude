@@ -87,7 +87,7 @@ For each step:
 3. **Green.** Write the minimal code that makes the test pass.
 4. **Refactor.** Remove duplication and improve naming. Tests must still pass after this step.
 5. **Verify.** Run the full test suite, not just the new test. If anything fails, undo the refactor and return to Green. Do not refactor unless the suite is green.
-6. **Record.** Add the step number to `steps_complete` in STATE.md and set `last_action`.
+6. **Record.** Add the step number to `steps_complete` in STATE.md, set `last_action`, and tick the step in `plan.md` (`- [ ]` to `- [x]`) so `fd-checkpoint` and `fd-resume` see it.
 
 Exemptions, which skip Red but still run Behavior and Green: renames and typos (run the tests once), config, migration, DTO, constants and type-only files, and documentation-only steps.
 
@@ -98,7 +98,7 @@ A bugfix step writes a regression test that reproduces the bug first, and Green 
 After each wave:
 
 1. If `topic_branch` is set, commit the wave: `git add` the files changed in the wave (never `git add -A`), then `git commit -m "fd(<topic>): wave <N>"`. Never push.
-2. Call the Skill tool with skill `code-review` and args `high`. It reviews the current diff, including uncommitted work. Never pass `ultra` (a billed cloud review), `--fix` or `--comment`.
+2. Call the Skill tool with skill `code-review` and args `high`. Its report is an input to the wave, not the end of your turn: fix findings and carry on to the next wave or Step 6. It reviews the current diff, including uncommitted work. Never pass `ultra` (a billed cloud review), `--fix` or `--comment`.
 3. Fix any confirmed bug or CRITICAL/HIGH finding before the next wave. Missing or weak tests count as HIGH, since the review does not measure coverage.
 
 If the Skill call is refused or errors, say so, stop and ask the user. Do not substitute your own review and present it as the built-in one.

@@ -19,6 +19,7 @@ Added
 
 Changed
 - `fd-resume` moves on to the next stage when the recorded stage is `complete`.
+- Found in a local end-to-end run and fixed before release: stages stalled after a built-in review returned its report (now told to carry on), `fd-execute` did not tick `plan.md`, and `fd-resume` miscounted requirements.
 - `fd-checkpoint` text no longer claims nothing saves automatically.
 
 Not in this release: parallel worktree waves (planned), UI design-first gating, `--override`, notifications.

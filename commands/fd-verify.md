@@ -71,13 +71,13 @@ If `affect.md` is missing, skip this step, record that the regression scope is u
 
 ## Step 4: Review and scan
 
-**Review.** Call the Skill tool with skill `code-review` and args `high`. Never pass `ultra`, `--fix` or `--comment`. Any confirmed bug or CRITICAL/HIGH finding is blocking. The review does not measure coverage: judge the 80% target for changed files from the Step 1 test results, and treat a miss as a HIGH finding.
+**Review.** Call the Skill tool with skill `code-review` and args `high`. Its report is an input to this step, not the end of your turn: carry on afterwards. Never pass `ultra`, `--fix` or `--comment`. Any confirmed bug or CRITICAL/HIGH finding is blocking. The review does not measure coverage: judge the 80% target for changed files from the Step 1 test results, and treat a miss as a HIGH finding.
 
 **Security.** If `security_check` is `skipped`, do not run it: its status is **SKIPPED (by choice)**. Otherwise: `security-review` diffs `origin/HEAD...`, so it sees only committed work. It also silently receives an empty diff when there is none, and a model will then improvise a review. Guard against that:
 
 1. Run `git rev-parse --verify origin/HEAD`. If it fails, tell the user `git remote set-head origin <default-branch>` fixes it, and ask before running anything.
 2. Run `git diff --name-only origin/HEAD...`. It must list the task's changed files. If it is empty because the work is uncommitted, ask the user to commit it on the topic branch (`topic_branch` in `checkpoint.json`).
-3. Only then call the Skill tool with skill `security-review`. Check that its output names the files and commits it examined. If those sections are empty, treat the check as **NOT RUN** and discard any review that did not come from the skill's own flow.
+3. Only then call the Skill tool with skill `security-review`. Its report is an input to Step 5, not the end of your turn: after it returns, carry straight on to Step 5 and the verdict without waiting for the user. Check that its output names the files and commits it examined. If those sections are empty, treat the check as **NOT RUN** and discard any review that did not come from the skill's own flow.
 4. Any Critical or High finding is blocking.
 
 If the Security check was chosen but cannot run, its status is **NOT RUN** and the verdict is NOT VERIFIED. Tell the user what is missing and offer: fix the setup, or switch to skipping (set `security_check: skipped` and record the reason in STATE.md).
