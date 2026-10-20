@@ -13,7 +13,7 @@ Pipeline entrypoint. Turns a task description into the four confirmed artifacts 
 
 If `$ARGUMENTS` is empty, ask the user for a task description before doing anything else. Do not guess or infer the task.
 
-Codebase mapping runs in the `fd-map` skill, which uses a read-only Explore subagent.
+Codebase mapping runs in the `fd-map` skill, which uses the read-only `flowdeck:mapper` subagent. Research (Step 2) goes to `flowdeck:researcher`, and the design and plan drafts (Step 4) to `flowdeck:architect` and `flowdeck:planner`. Those agents are read-only and cannot see this conversation: brief each with the task, the evidence and answers so far, the paths it needs and the template it must fill. You write the files, after CONFIRM.
 
 ## Step 1: Auto-init
 
@@ -55,7 +55,7 @@ Proposed queries:
 
 Do not continue until the user answers. **Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Research`, options `Run these queries (Recommended)`, `Skip research`, `Custom queries`, with the numbered queries in the question text.
 
-- **Y:** run the queries following the `fd-codenav` skill, then Read the matching files. Always also read `architecture.md`, prior `~/.fd-plan/<slug>/*/task.md` files, and `CLAUDE.md` / `AGENTS.md` if present. Summarize in 3-5 bullets.
+- **Y:** send the queries to one foreground `Agent` call with `subagent_type: flowdeck:researcher` (for 4-5 independent queries, split them across parallel calls in the same message), briefed with the task, the queries and the paths of `architecture.md` and the prior `~/.fd-plan/<slug>/*/task.md` files. It follows the `fd-codenav` skill's guidance, reads `CLAUDE.md` / `AGENTS.md` if present, and returns evidence per query. Summarize in 3-5 bullets. If the call fails, run the queries yourself.
 - **N:** log "Research skipped by user." and add `Note: created without codebase research — may need revision.` under `## Constraints` in task.md.
 - **C:** ask for the queries one per line, use them exactly as given, then run them as in Y.
 
@@ -77,6 +77,8 @@ Cover, in order, skipping what research already settled: scope (and what is out 
 ## Step 4: Draft the four artifacts
 
 Draft all four before showing anything. Every claim must trace to Step 2 evidence or a Step 3 answer. Do not guess.
+
+Write `task.md` yourself, since it holds the user's answers. Then call `Agent` with `subagent_type: flowdeck:architect`, briefed with `task.md`, the research bullets, the project `architecture.md` and the `architecture.md` and `affect.md` templates below; it returns both drafts. Then call `Agent` with `subagent_type: flowdeck:planner`, briefed with all three drafts and the `plan.md` template; it returns the plan and the effort estimate. Review what they return against the rules below, fix mismatches, and show all four. If a call fails, draft that part yourself.
 
 **`task.md`**
 ```md

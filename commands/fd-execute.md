@@ -17,9 +17,9 @@ Not ported in this version: parallel worktree waves and the `--override` and `--
 
 ## Delegation
 
-A subagent keeps test output and file reads out of this conversation, but it starts with a large context of its own, so it only pays off on longer plans. If `plan.md` has more than 3 steps, run each step's TDD cycle (Step 4) in one foreground `Agent` call (`subagent_type: general-purpose`); with 3 steps or fewer, do the steps yourself.
+You route; `flowdeck:coder` writes the code. Run each step's TDD cycle (Step 4) in one foreground `Agent` call with `subagent_type: flowdeck:coder`, one step at a time. This keeps test output and file reads out of this conversation and means source, config and test files are only written by the coder. The exception is a trivial task (`trivial: true` in `checkpoint.json`): do its steps yourself, since a subagent's startup cost outweighs the work.
 
-- **Model:** your own model is the ceiling. On Opus pass `model: "sonnet"`; on any other model omit `model` so it inherits yours.
+- **Model:** omit `model`. The agent inherits your session model.
 - **Brief:** the subagent cannot see this conversation. Give it the step text, its acceptance cases from `task.md`, the files from `plan.md`/`affect.md`, the paths of the stage rules, the Step 4 cycle, every decision that bears on the step (the Constraints and Out of Scope in `task.md`, the Approach in `architecture.md`, review outcomes, and anything the user decided or changed during this stage), and this instruction: never push, never commit, never touch `~/.fd-plan/`, and if the step's behavior is unclear return the question instead of guessing.
 - **Result:** ask for files changed, test command and result, and any open question. Do not accept "tests pass" on its word: run the full suite yourself before recording the step complete. If it returns a question, ask the user.
 - **You keep** the guards, the topic branch, the wave commit and review, and all STATE.md and checkpoint updates.

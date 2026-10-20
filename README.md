@@ -38,10 +38,10 @@ Planning state lives in `~/.fd-plan/<project>/` (`STATE.md`, `checkpoint.json`, 
 ## What it uses from Claude Code
 
 - **Code navigation:** the `LSP` tool when a [code-intelligence plugin](https://code.claude.com/docs/en/plugins/code-intelligence) and its language server are installed, otherwise Grep, Glob and Read. The `fd-codenav` skill holds the rules. Run `fd-doctor` to see which you have.
-- **Mapping:** the `fd-map` skill runs in a read-only `Explore` subagent pinned to haiku.
+- **Mapping:** the `fd-map` skill runs in the read-only `flowdeck:mapper` agent, pinned to haiku.
 - **Review:** the bundled `code-review` skill and the built-in `security-review`. Neither is replaced by a home-grown version.
-- **Subagents:** `fd-execute` runs each step in a subagent on plans of more than 3 steps, `fd-verify` runs its tests and each fix attempt in one, and `fd-review` runs its two lenses as parallel read-only agents. This keeps test output out of your conversation; each subagent starts with a large context of its own, so short plans stay inline.
-- **Models:** commands run on your session model; a `model:` in a command or skill does not switch it when stages chain. Delegates never run above your model: on Opus the execute and verify workers use sonnet, otherwise they inherit yours, and `fd-map` always uses haiku. For a pinned main model, start with `claude --agent flowdeck:orchestrator`.
+- **Agents:** nine focused agents (`mapper`, `researcher`, `architect`, `planner`, `coder`, `tester`, `reviewer`, `security-auditor`, `debug-specialist`), each with its own tool list: only `coder` can edit files. The main conversation routes and asks; `fd-execute` sends every step to `coder` (a trivial task is the exception), `fd-verify` uses `tester`, `security-auditor` and, on failure, `debug-specialist` then `coder`, `fd-review` runs two `reviewer` lenses in parallel, and `fd-task` uses `researcher`, `architect` and `planner`. Each subagent starts with a large context of its own.
+- **Models:** commands run on your session model; a `model:` in a command or skill does not switch it when stages chain. Agents inherit your session model, except `mapper`, which is pinned to haiku. If your environment sets `CLAUDE_CODE_SUBAGENT_MODEL`, that overrides inheritance. For a pinned main model, start with `claude --agent flowdeck:orchestrator`.
 
 ## Security review needs committed work
 
@@ -71,7 +71,7 @@ Full tables are in [DIFFERENCES.md](DIFFERENCES.md). In short:
 - Upstream's Rust `fdx` tools and dependency graph. Blast radius uses LSP or text search, and without LSP it misses dynamic imports.
 - 12 upstream skills: eleven that need its state files, tools or a pruning step (`change-impact-radar`, `blast-radius-preview`, `failure-replay-engine`, `self-healing-policies`, `telemetry-steward`, `decision-trace`, `session-persistence`, `context-guard`, `repo-memory-graph`, `context-steward` with its `-triggers` stub), and its `code-review`, left out so it cannot shadow the built-in.
 - Parallel worktree waves (steps run one at a time), `--override`, UI design-first gating, the context-window monitor and desktop notifications.
-- Upstream's custom agents and per-agent model config; see Subagents and Models above.
+- Upstream's per-agent model config, and its separate frontend-coder and devops agents (one `coder` here); see Agents and Models above.
 - Review is per wave, not per step, and uses Claude Code's built-in reviews instead of upstream's reviewer and security-auditor prompts.
 - `security-review` sees only committed work and needs `origin/HEAD`.
 - Nothing enforces "test before code" except the instruction in `fd-execute`.

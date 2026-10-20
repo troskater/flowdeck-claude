@@ -2,8 +2,7 @@
 name: fd-map
 description: Maps the current project's tech stack, module layout, entry points, conventions and dependencies in a read-only subagent. FlowDeck's fd-task calls this once to build the project-level architecture summary.
 context: fork
-agent: Explore
-model: haiku
+agent: flowdeck:mapper
 background: false
 user-invocable: false
 ---

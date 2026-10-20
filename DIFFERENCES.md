@@ -13,9 +13,11 @@ Compared 2026-10-20 against upstream's `src/commands`, `src/hooks`, `src/service
 |---|---|
 | `fdx-graph` code graph (Rust) | LSP, then Grep/Glob/Read, then Explore (`fd-codenav`). No persistent graph. |
 | `@reviewer` after each step | Built-in `code-review` (`high`) after each wave |
-| `@security-auditor` | Built-in `security-review`; needs a committed branch and `origin/HEAD` |
-| `@mapper` | `fd-map`, a forked Explore skill on haiku |
-| 13 custom agents | One optional launch target (`flowdeck:orchestrator`) |
+| `@security-auditor` | `flowdeck:security-auditor`, which runs the built-in `security-review`; needs a committed branch and `origin/HEAD` |
+| `@mapper` | `flowdeck:mapper` (haiku), used by the `fd-map` skill |
+| `@researcher`, `@architect`, `@planner`, `@reviewer`, `@tester`, `@debug-specialist` | Same names under `flowdeck:` |
+| `@backend-coder`, `@frontend-coder`, `@devops` | One `flowdeck:coder` |
+| `@orchestrator` | Main conversation; `flowdeck:orchestrator` is an optional launch target |
 | `flowdeck.json` `agentModels` | Model policy below |
 
 ## Still different
@@ -44,6 +46,6 @@ Spike results (2026-10-20, `claude -p --model sonnet`): `model:` in a chained sk
 
 So stages cannot be pinned, and the rule is: **a delegate never runs above the session model.**
 - Stages run on the session model.
-- `fd-map` always runs on haiku.
-- Delegation (also a context saver, not only a cost one): `fd-execute` runs each step in a subagent when the plan has more than 3 steps, `fd-verify` runs its tests/regression and each fix attempt in a subagent, and `fd-review` runs its two lenses as parallel read-only subagents. Delegates inherit the session model, except that on Opus the execute and verify workers use sonnet. Review lenses always inherit. Measured: a general-purpose subagent starts at about 97k tokens (mostly the user setup), about 70% cache-read once warm.
-- On Sonnet or Haiku nothing is delegated to a different model; everything stays on the session model, apart from the haiku map.
+- `mapper` always runs on haiku; every other agent inherits the session model.
+- Delegation (also a context saver, not only a cost one): `fd-execute` runs every step in `coder` (trivial tasks excepted), `fd-verify` runs its tests/regression in `tester`, the security scan in `security-auditor` and each fix attempt in `debug-specialist` then `coder`, and `fd-review` runs its two lenses as parallel `reviewer` calls. `fd-task` uses `researcher`, `architect` and `planner`. Measured: a general-purpose subagent starts at about 97k tokens (mostly the user setup), about 70% cache-read once warm.
+- Nothing is delegated to a different model apart from the haiku map.

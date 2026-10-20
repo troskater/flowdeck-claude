@@ -42,9 +42,9 @@ Wait for the answer, then record `security_check: on|skipped` and `auto_fix: on|
 
 ## Delegation
 
-Run Steps 1-3 in one foreground `Agent` call (`subagent_type: general-purpose`) so test logs stay out of this conversation. It returns only: pass/fail per check, the failing test names with the first lines of each error, coverage per affected file, and dependents `affect.md` missed. You keep Step 4, the report and the verdict.
+Run Steps 1-3 in one foreground `Agent` call with `subagent_type: flowdeck:tester` so test logs stay out of this conversation. It returns only: pass/fail per check, the failing test names with the first lines of each error, coverage per affected file, and dependents `affect.md` missed. You keep Step 4, the report and the verdict.
 
-Your own model is the ceiling: on Opus pass `model: "sonnet"`; on any other model omit `model` so it inherits yours. The subagent cannot see this conversation, so brief it with the topic, the paths of `affect.md` and the stage rules, and the Step 1-3 text. It must not edit files. If it cannot run the suite (no runner), it says so and you report that; never pass by default.
+Omit `model` on every delegate here; they inherit your session model. The tester cannot see this conversation, so brief it with the topic, the paths of `affect.md` and the stage rules, and the Step 1-3 text. It has no edit tools. If it cannot run the suite (no runner), it says so and you report that; never pass by default.
 
 ## Step 1: Tests
 
@@ -81,7 +81,7 @@ If `affect.md` is missing, skip this step, record that the regression scope is u
 
 1. Run `git rev-parse --verify origin/HEAD`. If it fails, tell the user `git remote set-head origin <default-branch>` fixes it, and ask before running anything.
 2. Run `git diff --name-only origin/HEAD...`. It must list the task's changed files. If it is empty because the work is uncommitted, ask the user to commit it on the topic branch (`topic_branch` in `checkpoint.json`).
-3. Only then run it in a foreground `Agent` call (`subagent_type: general-purpose`; apply the model rule from Delegation) with this prompt: `Call the Skill tool with skill security-review. Do not review anything yourself. Return the skill's complete report verbatim, including its lists of commits and files examined.` Run in this conversation, the skill's report took over the turn and the stage stopped after it; in a subagent it comes back as a tool result and you carry straight on to Step 5 and the verdict. Check that its output names the files and commits it examined. If those sections are empty, treat the check as **NOT RUN** and discard any review that did not come from the skill's own flow.
+3. Only then run it in a foreground `Agent` call with `subagent_type: flowdeck:security-auditor` and this prompt: `Call the Skill tool with skill security-review. Do not review anything yourself. Return the skill's complete report verbatim, including its lists of commits and files examined.` Run in this conversation, the skill's report took over the turn and the stage stopped after it; in a subagent it comes back as a tool result and you carry straight on to Step 5 and the verdict. Check that its output names the files and commits it examined. If those sections are empty, treat the check as **NOT RUN** and discard any review that did not come from the skill's own flow.
 4. Any Critical or High finding is blocking.
 
 If the Security check was chosen but cannot run, its status is **NOT RUN** and the verdict is NOT VERIFIED. Tell the user what is missing and offer: fix the setup, or switch to skipping (set `security_check: skipped` and record the reason in STATE.md).
@@ -126,7 +126,7 @@ Only when `auto_fix` is `on` (otherwise go straight to the options below). The u
 Fix automatically: failing tests, confirmed review bugs and CRITICAL/HIGH findings, security Critical/High findings, and affected files with no test (write the test). Do not fix automatically, and stop the loop: no test runner, security NOT RUN, missing `affect.md`, or a fix that needs a change outside `plan.md`'s scope or a new requirement.
 
 Per attempt:
-1. Fix each blocker at its root cause, test first for a bug. Delegate the fix to one foreground `Agent` (model rule as in Delegation) with the failing output, the files involved and the stage rules, and tell it not to commit or push; you review its diff summary before committing.
+1. Fix each blocker at its root cause, test first for a bug. If the cause is not evident from the failing output, first send it to one foreground `Agent` with `subagent_type: flowdeck:debug-specialist` (read-only; it returns cause, smallest fix and the regression test). Then delegate the fix to one foreground `Agent` with `subagent_type: flowdeck:coder`, giving it the failing output, the diagnosis, the files involved and the stage rules, and tell it not to commit or push; you review its diff summary before committing.
 2. If `topic_branch` is set, commit the fix: `git add` only the files you changed, `git commit -m "fd(<topic>): verify fix <n>"`. Never push.
 3. Re-run Step 1 (full suite) and every check that failed. Re-run `code-review` and, if enabled, `security-review` whenever code changed, since a fix can introduce new findings.
 4. Print the Step 5 table again and say what attempt this was.

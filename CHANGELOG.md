@@ -2,6 +2,19 @@
 
 Every change that reaches users bumps the version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (a test checks they match).
 
+## 0.2.0
+
+Added
+- Nine focused agents under `agents/`, modelled on upstream's roster: `mapper`, `researcher`, `architect`, `planner`, `coder`, `tester`, `reviewer`, `security-auditor`, `debug-specialist`. Read-only agents have no edit tools; only `coder` can write.
+
+Changed
+- `fd-execute` sends every step to `flowdeck:coder` (a trivial task is still done inline). The old rule of delegating only above 3 steps is gone.
+- `fd-verify` uses `tester`, `security-auditor` and, in the fix loop, `debug-specialist` then `coder`. `fd-review` lenses use `reviewer`. `fd-task` uses `researcher`, `architect` and `planner`; the main conversation still writes the files after CONFIRM.
+- `fd-map` runs in `flowdeck:mapper`. Agents inherit the session model (the old "sonnet on Opus" rule is removed); only `mapper` is pinned, to haiku.
+- `flowdeck:orchestrator` now states the router-not-worker rule and the stage-to-agent table.
+
+Not in this release: Workflow scripts and parallel worktree waves (planned for 0.3.0).
+
 ## 0.1.0
 
 First described release. Port of DVNghiem/FlowDeck to Claude Code's built-ins; see [DIFFERENCES.md](DIFFERENCES.md).
