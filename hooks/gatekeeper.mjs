@@ -20,7 +20,7 @@ if (existsSync(statePath)) {
 
 if (stage === "EXECUTE" || stage === "VERIFY") process.exit(0);
 
-const reason = `[FlowDeck] Blocked ${input.tool_name}: stage is [${stage}]. Advance to EXECUTE via /fd-execute before editing code.`;
+const reason = `[FlowDeck] Blocked ${input.tool_name}: stage is [${stage}]. The execute stage is not ported yet, so code edits stay blocked. Set FLOWDECK_DEV_MODE=on to bypass during development.`;
 process.stdout.write(JSON.stringify({
   hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: reason },
 }));

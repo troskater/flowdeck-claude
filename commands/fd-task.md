@@ -26,7 +26,7 @@ If `~/.fd-plan/<slug>/` does not exist:
    next_action: complete fd-task steps
    ```
 2. Write `checkpoint.json` with `"current_command": "fd-task"` and `"current_stage": "in_progress"`.
-3. Delegate to `mapper` to map the codebase: tech stack, module layout, entry points, conventions, dependencies. Write the result to `~/.fd-plan/<slug>/architecture.md`.
+3. Delegate to `mapper` to map the codebase: tech stack, module layout, entry points, conventions, dependencies. Write the result to `~/.fd-plan/<slug>/architecture.md`. This file is project-level context. It is not the task's design: Step 6 writes the task's own `architecture.md` under `<topic>/`.
 
 If codebase mapping fails, report the failure and stop. A task planned against an unmapped codebase is not trustworthy.
 
