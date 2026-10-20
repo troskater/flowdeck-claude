@@ -9,7 +9,7 @@ Resume an interrupted FlowDeck session.
 
 **Input:** $ARGUMENTS — pass `--yes` to skip the confirmation pause.
 
-**Asking.** Every question below goes through the `AskUserQuestion` tool when you have it: 2-4 short options, your recommendation first and labelled `(Recommended)`, free text arriving as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid. If the tool is unavailable (non-interactive runs) or is denied, ask in plain text with the layout shown and wait.
+**Asking.** Every decision in this command is asked with the `AskUserQuestion` tool, and the text layouts shown are only the fallback for when the tool is unavailable (non-interactive runs) or denied. If `AskUserQuestion` is not in your tool list but `ToolSearch` is, load it first with `ToolSearch` query `select:AskUserQuestion`. Use 2-4 short options, your recommendation first and labelled `(Recommended)`; free text arrives as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid.
 
 ## Steps
 
@@ -43,7 +43,7 @@ Type CONFIRM to resume from this point.
 ═══════════════════════════════════════════════
 ```
 
-6. Unless `--yes` was passed, **wait** for the user to type CONFIRM. As a question: header `Resume`, options `Resume from here (Recommended)` and `Stop`.
+6. Unless `--yes` was passed, **wait** for the user to type CONFIRM. **Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Resume`, options `Resume from here (Recommended)` and `Stop`.
 
 7. After confirmation:
    - If `blockers` is non-empty, report them and stop. Do not resume into a blocked state.

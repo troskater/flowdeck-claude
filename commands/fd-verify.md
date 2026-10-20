@@ -9,7 +9,7 @@ Run the verification pipeline for the active topic. `/flowdeck:fd-done` will not
 
 **Input:** $ARGUMENTS — optional `--topic=<slug>` to target a topic other than the active one, and `--security=on|off` to answer the security question below without being asked.
 
-**Asking.** Every question below goes through the `AskUserQuestion` tool when you have it: 2-4 short options, your recommendation first and labelled `(Recommended)`, free text arriving as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid. If the tool is unavailable (non-interactive runs) or is denied, ask in plain text with the layout shown and wait.
+**Asking.** Every decision in this command is asked with the `AskUserQuestion` tool, and the text layouts shown are only the fallback for when the tool is unavailable (non-interactive runs) or denied. If `AskUserQuestion` is not in your tool list but `ToolSearch` is, load it first with `ToolSearch` query `select:AskUserQuestion`. Use 2-4 short options, your recommendation first and labelled `(Recommended)`; free text arrives as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid.
 
 Step 4 uses Claude Code's built-in `code-review` and `security-review` skills. This command never runs a substitute of its own.
 
@@ -36,7 +36,7 @@ Before I verify "<topic>":
 Reply e.g. "Y Y".
 ```
 
-As questions: one `AskUserQuestion` call with two questions, headers `Security` (`Run audit (Recommended)`, `Skip`) and `Auto-fix` (`Allow up to 2 fix attempts (Recommended)`, `Report only`); put the implications in each question's text.
+**Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** one `AskUserQuestion` call with two questions, headers `Security` (`Run audit (Recommended)`, `Skip`) and `Auto-fix` (`Allow up to 2 fix attempts (Recommended)`, `Report only`); put the implications in each question's text.
 
 Wait for the answer, then record `security_check: on|skipped` and `auto_fix: on|off` in STATE.md. Step 4 runs the security part only when `security_check` is `on`; the fix loop runs only when `auto_fix` is `on`.
 

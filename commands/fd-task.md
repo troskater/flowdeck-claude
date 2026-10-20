@@ -9,7 +9,7 @@ Pipeline entrypoint. Turns a task description into the four confirmed artifacts 
 
 **Input:** $ARGUMENTS — the task description. REQUIRED.
 
-**Asking.** Every question below goes through the `AskUserQuestion` tool when you have it: 2-4 short options, your recommendation first and labelled `(Recommended)`, free text arriving as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid. If the tool is unavailable (non-interactive runs) or is denied, ask in plain text with the layout shown and wait.
+**Asking.** Every decision in this command is asked with the `AskUserQuestion` tool, and the text layouts shown are only the fallback for when the tool is unavailable (non-interactive runs) or denied. If `AskUserQuestion` is not in your tool list but `ToolSearch` is, load it first with `ToolSearch` query `select:AskUserQuestion`. Use 2-4 short options, your recommendation first and labelled `(Recommended)`; free text arrives as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid.
 
 If `$ARGUMENTS` is empty, ask the user for a task description before doing anything else. Do not guess or infer the task.
 
@@ -38,7 +38,7 @@ If `~/.fd-plan/<slug>/architecture.md` already exists, do not overwrite it. Read
 
 Derive 3-5 research queries from the task. Each should target a different area: existing implementation, affected modules, dependencies, prior decisions.
 
-Present them and wait:
+Present them and wait. Ask with the tool as described after the block; print the block only as the fallback:
 
 ```
 Research plan for: "<task description>"
@@ -53,7 +53,7 @@ Proposed queries:
 [C] Use custom queries
 ```
 
-Do not continue until the user answers. As a question: header `Research`, options `Run these queries (Recommended)`, `Skip research`, `Custom queries`, with the numbered queries in the question text.
+Do not continue until the user answers. **Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Research`, options `Run these queries (Recommended)`, `Skip research`, `Custom queries`, with the numbered queries in the question text.
 
 - **Y:** run the queries following the `fd-codenav` skill, then Read the matching files. Always also read `architecture.md`, prior `~/.fd-plan/<slug>/*/task.md` files, and `CLAUDE.md` / `AGENTS.md` if present. Summarize in 3-5 bullets.
 - **N:** log "Research skipped by user." and add `Note: created without codebase research — may need revision.` under `## Constraints` in task.md.
@@ -172,7 +172,7 @@ Type CONFIRM to save, or describe changes needed.
 
 For a trivial task add: `Trivial task: skip fd-review and fd-verify? Type CONFIRM SKIP to save and skip them, CONFIRM to save and run the full pipeline.`
 
-As a question: header `Artifacts`, options `Confirm (Recommended)` and `Request changes` (the changes arrive as "Other" text); for a trivial task a third option `Confirm and skip review/verify`, which counts as `CONFIRM SKIP`. Show the drafts in your message first, since the question text is short.
+**Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Artifacts`, options `Confirm (Recommended)` and `Request changes` (the changes arrive as "Other" text); for a trivial task a third option `Confirm and skip review/verify`, which counts as `CONFIRM SKIP`. Show the drafts in your message first, since the question text is short.
 
 Do not write any file before CONFIRM. On requested changes, return to Step 4.
 

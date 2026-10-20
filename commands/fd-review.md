@@ -9,7 +9,7 @@ Review the artifacts `/flowdeck:fd-task` produced, through two independent lense
 
 **Input:** $ARGUMENTS — optional `--topic=<slug>` to review a topic other than the active one.
 
-**Asking.** Every question below goes through the `AskUserQuestion` tool when you have it: 2-4 short options, your recommendation first and labelled `(Recommended)`, free text arriving as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid. If the tool is unavailable (non-interactive runs) or is denied, ask in plain text with the layout shown and wait.
+**Asking.** Every decision in this command is asked with the `AskUserQuestion` tool, and the text layouts shown are only the fallback for when the tool is unavailable (non-interactive runs) or denied. If `AskUserQuestion` is not in your tool list but `ToolSearch` is, load it first with `ToolSearch` query `select:AskUserQuestion`. Use 2-4 short options, your recommendation first and labelled `(Recommended)`; free text arrives as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid.
 
 Run the two lenses (Steps 2 and 3) as two foreground `Agent` calls (`subagent_type: Explore`, read-only) sent in the same message so they run in parallel. Omit `model` so they inherit yours: judgment work stays on your model. A lens that did not write the plan does not anchor on it. Each subagent cannot see this conversation, so brief it with the lens text, the topic's four artifact paths plus the project `architecture.md`, and ask for findings only, each marked blocking or advisory with its evidence. You merge the results into the Step 4 report and handle Step 5 yourself. If a subagent call fails, run that lens yourself.
 
@@ -87,7 +87,7 @@ Type CONFIRM to accept these artifacts and continue to /flowdeck:fd-execute,
 or describe the revisions you want.
 ```
 
-**Wait for the user.** Do not proceed until they respond. As a question: header `Review`, options `Confirm (Recommended)` and `Request revisions` (the revisions arrive as "Other" text); when there are blocking findings add `Accept the risk and continue`, and never treat plain Confirm as accepting them.
+**Wait for the user.** Do not proceed until they respond. **Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Review`, options `Confirm (Recommended)` and `Request revisions` (the revisions arrive as "Other" text); when there are blocking findings add `Accept the risk and continue`, and never treat plain Confirm as accepting them.
 
 - **CONFIRM:** go to Step 6. Record each advisory finding the user accepted as-is.
 - **Revisions requested:** apply them to the files under `~/.fd-plan/<slug>/<topic>/`, then re-run Steps 2–4 on the revised set.
