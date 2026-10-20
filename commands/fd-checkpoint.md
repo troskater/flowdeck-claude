@@ -6,7 +6,7 @@ description: Force-save session state to checkpoint.json and STATE.md so the wor
 
 Save the current session state so `/flowdeck:fd-resume` can pick the work up later.
 
-Nothing saves automatically in this version: the upstream `session.idle` hook is not ported. Run this before closing a session mid-pipeline.
+A Stop hook refreshes `saved_at` after each turn, but only this command writes `STATE.md` and the rest of the checkpoint. Run it before closing a session mid-pipeline.
 
 ## Steps
 

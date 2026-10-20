@@ -157,6 +157,8 @@ Every step traces to at least one `R-XX`. Steps in the same wave do not depend o
 
 **Effort estimate:** 1-3 files, low risk, 1 wave ≈ 30 min. 4-10 files, low/medium, 1-2 waves ≈ 2-4 h. 10+ files, high risk, or 3+ waves ≈ 1 day+. Add 50% if 3+ systems are affected. Show it with the drafts.
 
+**Trivial check.** The task is trivial only if it is a rename, typo, config value or version bump, touches at most 2 files, is `low` risk, has a single wave and changes no behavior. If so, propose the shortcut with the drafts: `fd-task -> fd-execute -> fd-done`, skipping `fd-review` and `fd-verify`, with the reason stated. The user decides; never apply it on your own.
+
 ## Step 5: Confirm
 
 Present all four drafts, then print:
@@ -166,6 +168,8 @@ Ready to save these artifacts?
 Type CONFIRM to save, or describe changes needed.
 ```
 
+For a trivial task add: `Trivial task: skip fd-review and fd-verify? Type CONFIRM SKIP to save and skip them, CONFIRM to save and run the full pipeline.`
+
 Do not write any file before CONFIRM. On requested changes, return to Step 4.
 
 ## Step 6: Save
@@ -174,7 +178,7 @@ Derive `<topic>` as a lowercase, hyphenated slug of the task title. Write `task.
 
 Check that each file exists and contains its required headings. Print what is missing and return to Step 4 if anything is.
 
-Then update `STATE.md`: `topic: <topic>`, `plan_confirmed: true`, `last_action: Task artifacts confirmed and saved`, `next_action: run /flowdeck:fd-review`.
+Then update `STATE.md`: `topic: <topic>`, `plan_confirmed: true`, `last_action: Task artifacts confirmed and saved`, `next_action: run /flowdeck:fd-review`. After `CONFIRM SKIP` also set `trivial: true`, `skipped_stages: fd-review, fd-verify`, `skip_reason: <the reason you gave>`, and `next_action: run /flowdeck:fd-execute`.
 
 ## Step 7: Update checkpoint
 
@@ -191,6 +195,8 @@ Merge into `~/.fd-plan/<slug>/checkpoint.json`. Keep the existing keys and set:
 }
 ```
 
+After `CONFIRM SKIP` also add `"trivial": true`.
+
 ## Errors
 
 - Empty `$ARGUMENTS`: ask for the task. Do not guess one.
@@ -199,4 +205,4 @@ Merge into `~/.fd-plan/<slug>/checkpoint.json`. Keep the existing keys and set:
 
 ## Completion
 
-Report the topic slug, the four artifact paths, requirement count, risk level, and the parallel/sequential split. The CONFIRM in Step 5 was the approval gate for this stage. Once the artifacts are saved and the checkpoint is written, continue straight into the review: invoke the Skill tool with skill `flowdeck:fd-review` and carry on with that stage. If validation failed or the user did not CONFIRM, stop here.
+Report the topic slug, the four artifact paths, requirement count, risk level, and the parallel/sequential split. The CONFIRM in Step 5 was the approval gate for this stage. Once the artifacts are saved and the checkpoint is written, continue straight into the review: invoke the Skill tool with skill `flowdeck:fd-review` and carry on with that stage (after `CONFIRM SKIP`, with skill `flowdeck:fd-execute` instead). If validation failed or the user did not CONFIRM, stop here.

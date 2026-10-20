@@ -22,11 +22,11 @@ Compared 2026-10-20 against upstream's `src/commands`, `src/hooks`, `src/service
 | Area | Upstream | Here |
 |---|---|---|
 | Parallel waves | Parallel guard creates `fd-<slug>-wave-N` worktrees and merges them | Guard classifies, everything runs sequentially (deferred) |
-| Trivial-task shortcut | `fd-task -> fd-execute -> fd-done` | Not ported |
+| Trivial-task shortcut | `fd-task -> fd-execute -> fd-done` | Ported: user types `CONFIRM SKIP` at the end of `fd-task`; tests run once; `fd-done` notes the skip |
 | UI design-first gating | Blocks UI-heavy work until `design_approved` | Not ported |
 | `--override`, `--keep-worktree` | Override log surfaced in verify | Not ported |
-| Lesson capture | Review step 5b | Not ported |
-| Constraint enforcement | `tool-guard` checks `.codebase/CONSTRAINTS.md` | Not ported |
+| Lesson capture | Review step 5b, repo-memory | Ported as `~/.fd-plan/<slug>/lessons.md`, given to the review lenses |
+| Constraint enforcement | `tool-guard` checks `.codebase/CONSTRAINTS.md` | Ported (Forbidden Paths) in `tool-guard.mjs` |
 | Context-window monitor, desktop notifications | 70% warning, idle/error notifications | Not ported (Claude Code auto-compacts) |
 | Per-step review | `@reviewer` each step | Per wave |
 | `fd-status` | Same output | Same (with `--all`) |

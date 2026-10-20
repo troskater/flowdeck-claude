@@ -38,7 +38,8 @@ Planning state lives in `~/.fd-plan/<project>/` (`STATE.md`, `checkpoint.json`, 
 - **Code navigation:** the `LSP` tool when a [code-intelligence plugin](https://code.claude.com/docs/en/plugins/code-intelligence) and its language server are installed, otherwise Grep, Glob and Read. The `fd-codenav` skill holds the rules. Run `fd-doctor` to see which you have.
 - **Mapping:** the `fd-map` skill runs in a read-only `Explore` subagent pinned to haiku.
 - **Review:** the bundled `code-review` skill and the built-in `security-review`. Neither is replaced by a home-grown version.
-- **Models:** interactive commands run on your session model (a command-level `model:` only lasts one turn). For a pinned model, start with `claude --agent flowdeck:orchestrator`.
+- **Subagents:** `fd-execute` runs each step in a subagent on plans of more than 3 steps, `fd-verify` runs its tests and each fix attempt in one, and `fd-review` runs its two lenses as parallel read-only agents. This keeps test output out of your conversation; each subagent starts with a large context of its own, so short plans stay inline.
+- **Models:** commands run on your session model; a `model:` in a command or skill does not switch it when stages chain. Delegates never run above your model: on Opus the execute and verify workers use sonnet, otherwise they inherit yours, and `fd-map` always uses haiku. For a pinned main model, start with `claude --agent flowdeck:orchestrator`.
 
 ## Security review needs committed work
 
@@ -52,19 +53,35 @@ While a pipeline is active, a hook blocks `Write`, `Edit` and `MultiEdit` until 
 - a finished pipeline (`fd-done` complete) or a cancelled one
 - writes under `~/.fd-plan/`
 
-Set `FLOWDECK_DEV_MODE=on` in the environment that launches Claude Code to bypass it.
+Run `/flowdeck:fd-gate off` to turn the gate off for the current project (`on` restores it, `status` shows it). `FLOWDECK_DEV_MODE=on` in the environment that launches Claude Code also bypasses it.
+
+A second hook, the tool guard, applies in FlowDeck projects. It blocks reading `.env*`, `*.pem`, `*.key` and `*.secret`, writing under `node_modules`, the destructive `rm` with recursive-force flags, and edits to the Forbidden Paths in `~/.fd-plan/<project>/.codebase/CONSTRAINTS.md`. `/flowdeck:fd-gate off` and `FLOWDECK_TOOL_GUARD_ENABLED=off` disable it. A Stop hook refreshes `saved_at` on an open checkpoint.
 
 ## Rules and skills
 
 Upstream's rules are injected at session start, only in projects FlowDeck has already touched: the always-on rules in full, plus an index of the stage rules matching the detected language, which `fd-execute` and `fd-verify` read. 30 of upstream's 42 skills are included; two of them (`research-first`, `context-budget`) were adapted from `fdx` to LSP and Grep.
 
-## Not ported
+## Compared with upstream
 
-- Upstream's Rust `fdx` tools and dependency graph.
+Full tables are in [DIFFERENCES.md](DIFFERENCES.md). In short:
+
+**Not ported (shortcomings)**
+- Upstream's Rust `fdx` tools and dependency graph. Blast radius uses LSP or text search, and without LSP it misses dynamic imports.
 - 12 upstream skills: eleven that need its state files, tools or a pruning step (`change-impact-radar`, `blast-radius-preview`, `failure-replay-engine`, `self-healing-policies`, `telemetry-steward`, `decision-trace`, `session-persistence`, `context-guard`, `repo-memory-graph`, `context-steward` with its `-triggers` stub), and its `code-review`, left out so it cannot shadow the built-in.
-- Parallel worktree waves, `--override`, lesson capture, and the automatic save on idle.
+- Parallel worktree waves (steps run one at a time), `--override`, UI design-first gating, the context-window monitor and desktop notifications.
+- Upstream's custom agents and per-agent model config; see Subagents and Models above.
+- Review is per wave, not per step, and uses Claude Code's built-in reviews instead of upstream's reviewer and security-auditor prompts.
+- `security-review` sees only committed work and needs `origin/HEAD`.
 - Nothing enforces "test before code" except the instruction in `fd-execute`.
-- Blast radius without LSP is text-based and misses dynamic imports.
+- State files are written by the model, so their format can drift.
+
+**Added here**
+- `/flowdeck:fd-gate`, the tool guard and the autosave hook (above), `fd-status --all`, and `fd-doctor`.
+- `fd-verify` asks up front about the security audit and auto-fix, and fixes and re-runs up to twice on failure. Upstream only offered a manual re-run.
+- Subagent delegation and the model ceiling (above).
+- The full test suite runs after every step in `fd-execute`.
+
+**Ported as upstream:** the trivial-task shortcut (`CONFIRM SKIP` at the end of `fd-task`), lesson capture (`lessons.md`) and Forbidden Paths constraints.
 
 ## Develop
 

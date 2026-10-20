@@ -45,7 +45,7 @@ Type CONFIRM to resume from this point.
 
 7. After confirmation:
    - If `blockers` is non-empty, report them and stop. Do not resume into a blocked state.
-   - Otherwise invoke the Skill tool with skill `flowdeck:<current_command>` (the CONFIRM in step 6 is the approval) and carry on with that stage. Its own guards skip finished work and steps already in `steps_complete`.
+   - Otherwise pick the stage to run. If `current_stage` is `complete`, it is the stage after `current_command` in the pipeline order below (`fd-done` complete: say the pipeline is finished and stop). If `current_stage` is `failed`, it is `fd-execute` after a failed `fd-verify`, else `current_command` again. Anything else re-enters `current_command`. Invoke the Skill tool with skill `flowdeck:<that stage>` (the CONFIRM in step 6 is the approval) and carry on with it. Its own guards skip finished work and steps already in `steps_complete`.
    - If the checkpoint was missing, use STATE.md: `plan_confirmed: true` with unfinished steps resumes at `/flowdeck:fd-execute`; no plan starts at `/flowdeck:fd-task`.
    - Say what the next step is before starting it.
 

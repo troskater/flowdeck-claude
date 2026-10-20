@@ -1,6 +1,7 @@
 // Tool guard (port of upstream tool-guard): in a FlowDeck project, blocks reads of secret files,
 // writes into node_modules and `rm -rf`. Disable with FLOWDECK_TOOL_GUARD_ENABLED=off.
-// shortcut: no CONSTRAINTS.md enforcement and only active where ~/.fd-plan/<slug>/ exists. upgrade: port constraint checks if wanted.
+// Also enforces the Forbidden Paths list in ~/.fd-plan/<slug>/.codebase/CONSTRAINTS.md.
+// shortcut: only active where ~/.fd-plan/<slug>/ exists (upstream guards every project).
 import { readFileSync, existsSync } from "node:fs";
 import { join, basename } from "node:path";
 import { homedir } from "node:os";
@@ -27,6 +28,19 @@ if (tool === "Bash") {
   const name = basename(file).toLowerCase();
   if (tool === "Read" && (name === ".env" || name.startsWith(".env.") || /\.(pem|key|secret)$/.test(name))) why = `reading ${name} is blocked (secrets)`;
   else if (tool !== "Read" && /[\\/]node_modules[\\/]/.test(file)) why = "writing into node_modules is blocked";
+  else if (tool !== "Read") {
+    // upstream format: a "## Forbidden Paths" list of "- pattern  # note" lines in .codebase/CONSTRAINTS.md
+    try {
+      const text = readFileSync(join(projectDir, ".codebase", "CONSTRAINTS.md"), "utf8");
+      const section = text.match(/## Forbidden Paths\r?\n([\s\S]*?)(?:\r?\n##|$)/)?.[1] ?? "";
+      for (const line of section.split(/\r?\n/)) {
+        const pattern = line.replace(/^-\s*/, "").split("#")[0].trim();
+        if (pattern && file.replace(/\\/g, "/").includes(pattern)) why = `editing "${pattern}" is forbidden by .codebase/CONSTRAINTS.md`;
+      }
+    } catch {
+      // no constraints file
+    }
+  }
 }
 
 if (why) {

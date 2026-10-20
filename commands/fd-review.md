@@ -27,7 +27,7 @@ Run /flowdeck:fd-task to regenerate the artifacts.
 
 Otherwise read all four. Also read `~/.fd-plan/<slug>/architecture.md` for project-level context. Do not review a partial set.
 
-Prior review lessons are not ported yet, so there is nothing to load from repo memory.
+If `~/.fd-plan/<slug>/lessons.md` exists, read it and give each lens subagent the lines that match this project's tech stack or the task's area. They are patterns earlier reviews flagged.
 
 ## Step 2: CEO review — challenge the premise
 
@@ -91,6 +91,10 @@ or describe the revisions you want.
 - **Revisions requested:** apply them to the files under `~/.fd-plan/<slug>/<topic>/`, then re-run Steps 2–4 on the revised set.
 
 Do not move past blocking findings unless the user explicitly accepts the risk. Record that decision in `STATE.md`.
+
+## Step 5b: Capture lessons
+
+After CONFIRM, append the review's recurring patterns to `~/.fd-plan/<slug>/lessons.md` (create it if absent), one line each: `- fd-review (<topic>, <date>): <pattern> — <recommendation>`. Take them from findings of either lens that reflect a habit rather than a one-off, for example scope creep, a wrong-problem premise, an architecture smell or a blast-radius miss. Skip the step if there were none, and never rewrite earlier lines.
 
 ## Step 6: Update state and checkpoint
 

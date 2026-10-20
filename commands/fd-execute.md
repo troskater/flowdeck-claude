@@ -18,7 +18,7 @@ Not ported in this version: parallel worktree waves and the `--override` and `--
 A subagent keeps test output and file reads out of this conversation, but it starts with a large context of its own, so it only pays off on longer plans. If `plan.md` has more than 3 steps, run each step's TDD cycle (Step 4) in one foreground `Agent` call (`subagent_type: general-purpose`); with 3 steps or fewer, do the steps yourself.
 
 - **Model:** your own model is the ceiling. On Opus pass `model: "sonnet"`; on any other model omit `model` so it inherits yours.
-- **Brief:** the subagent cannot see this conversation. Give it the step text, its acceptance cases from `task.md`, the files from `plan.md`/`affect.md`, the paths of the stage rules, the Step 4 cycle, and this instruction: never push, never commit, never touch `~/.fd-plan/`, and if the step's behavior is unclear return the question instead of guessing.
+- **Brief:** the subagent cannot see this conversation. Give it the step text, its acceptance cases from `task.md`, the files from `plan.md`/`affect.md`, the paths of the stage rules, the Step 4 cycle, every decision that bears on the step (the Constraints and Out of Scope in `task.md`, the Approach in `architecture.md`, review outcomes, and anything the user decided or changed during this stage), and this instruction: never push, never commit, never touch `~/.fd-plan/`, and if the step's behavior is unclear return the question instead of guessing.
 - **Result:** ask for files changed, test command and result, and any open question. Do not accept "tests pass" on its word: run the full suite yourself before recording the step complete. If it returns a question, ask the user.
 - **You keep** the guards, the topic branch, the wave commit and review, and all STATE.md and checkpoint updates.
 
@@ -31,7 +31,7 @@ Stop with the matching message if any guard fails:
 - `~/.fd-plan/<slug>/STATE.md` missing → `No planning workspace. Run /flowdeck:fd-task first.`
 - `task.md`, `architecture.md`, `affect.md` or `plan.md` missing under `<topic>/` → `Error: <file> not found for topic "<topic>". Run /flowdeck:fd-task first.`
 - `plan_confirmed` is not `true` in STATE.md → `Plan not confirmed. Run /flowdeck:fd-task first.`
-- `checkpoint.json` does not show `current_command: fd-review` with `current_stage: complete` → `Review has not passed. Run /flowdeck:fd-review first.`
+- `checkpoint.json` does not show `current_command: fd-review` with `current_stage: complete` → `Review has not passed. Run /flowdeck:fd-review first.` Exception: `trivial: true` in `checkpoint.json` with `current_command: fd-task` and `current_stage: complete` (the user chose `CONFIRM SKIP`); log `Review skipped (trivial): <skip_reason>` and continue.
 
 Do not skip these guards. There is no override.
 
@@ -121,7 +121,7 @@ Keep `current_stage: EXECUTE` until verification starts, so the gate stays open 
 
 When every step is complete, update STATE.md: `status: executed`, `next_action: run /flowdeck:fd-verify`.
 
-Report: steps implemented, test status, review findings, and files changed. The plan was approved at the end of `fd-review`, so there is no further gate. When every step is complete and the last wave's review is clean, invoke the Skill tool with skill `flowdeck:fd-verify` and carry on with that stage. If a step failed or any step is still incomplete, stop and report instead.
+Report: steps implemented, test status, review findings, and files changed. The plan was approved at the end of `fd-review`, so there is no further gate. When every step is complete and the last wave's review is clean, invoke the Skill tool with skill `flowdeck:fd-verify` and carry on with that stage. For a trivial task (`trivial: true`), run the test suite once instead, and if it passes set STATE.md `status: verified` and `verified_by: trivial skip` and invoke `flowdeck:fd-done`; if it fails, stop and report. If a step failed or any step is still incomplete, stop and report instead.
 
 ## Error handling
 

@@ -91,6 +91,15 @@ test("tool-guard: inert outside a FlowDeck project, active inside", () => {
   assert.equal(guard("Write", { file_path: code }), "allow");
 });
 
+test("tool-guard: CONSTRAINTS.md Forbidden Paths block edits", () => {
+  mkdirSync(join(planDir, ".codebase"), { recursive: true });
+  writeFileSync(join(planDir, ".codebase", "CONSTRAINTS.md"), "# C\n\n## Forbidden Paths\n- src/core/   # no direct edits\n- generated/\n\n## Other\n- src/ok/\n");
+  assert.equal(guard("Edit", { file_path: join(project, "src", "core", "a.ts") }), "deny");
+  assert.equal(guard("Write", { file_path: join(project, "generated", "x.ts") }), "deny");
+  assert.equal(guard("Edit", { file_path: join(project, "src", "ok", "a.ts") }), "allow");
+  assert.equal(guard("Read", { file_path: join(project, "src", "core", "a.ts") }), "allow");
+});
+
 test("autosave: stamps open pipelines, leaves closed ones alone", () => {
   const cp = join(planDir, "checkpoint.json");
   writeFileSync(cp, JSON.stringify({ current_command: "fd-execute", current_stage: "EXECUTE", saved_at: "old" }));
@@ -113,6 +122,11 @@ test("fd-gate: gate.json enabled=false turns off the gate and the tool guard", (
   writeFileSync(gj, JSON.stringify({ enabled: true }));
   assert.equal(gate(code), "deny");
   assert.equal(guard("Bash", { command: "rm -rf x" }), "deny");
+});
+
+test("version: plugin.json and marketplace.json agree", () => {
+  const read = (f) => JSON.parse(readFileSync(join(root, ".claude-plugin", f), "utf8"));
+  assert.equal(read("marketplace.json").plugins[0].version, read("plugin.json").version);
 });
 
 test("session-start: silent in a project FlowDeck has not touched", () => {
