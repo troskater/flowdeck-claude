@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 
 const input = JSON.parse(readFileSync(0, "utf8"));
+if (process.env.FLOWDECK_DEV_MODE === "on") process.exit(0);
 const slug = (input.cwd ?? process.cwd()).split(/[\\/]/).pop();
 const statePath = join(homedir(), ".fd-plan", slug, "checkpoint.json");
 
