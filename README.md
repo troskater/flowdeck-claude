@@ -42,7 +42,7 @@ Planning state lives in `~/.fd-plan/<project>/` (`STATE.md`, `checkpoint.json`, 
 
 ## Security review needs committed work
 
-`security-review` compares your branch with `origin/HEAD` and sees only committed changes. So `fd-execute` offers a local branch `fd/<topic>` and commits each wave (never pushed), and `fd-verify` checks for `origin/HEAD` and a non-empty diff first. `fd-verify` asks whether to run the security audit at all (`--security=on|off` answers it up front). If you choose it and it cannot run, the check is NOT RUN and the verdict is NOT VERIFIED until you fix the setup or switch to skipping. A skip is recorded and `fd-done` reminds you. When verification fails, `fd-verify` makes up to two automatic fix-and-rerun attempts before handing back to you. Without `origin/HEAD` run `git remote set-head origin -a`, or `fd-doctor` will tell you what is missing.
+`security-review` compares your branch with `origin/HEAD` and sees only committed changes. So `fd-execute` offers a local branch `fd/<topic>` and commits each wave (never pushed), and `fd-verify` checks for `origin/HEAD` and a non-empty diff first. `fd-verify` first asks whether to run the security audit and whether it may auto-fix failures (`--security=on|off` and `--fix=on|off` answer up front). If you choose it and it cannot run, the check is NOT RUN and the verdict is NOT VERIFIED until you fix the setup or switch to skipping. A skip is recorded and `fd-done` reminds you. When verification fails, `fd-verify` makes up to two automatic fix-and-rerun attempts (if you allowed auto-fix) before handing back to you. Without `origin/HEAD` run `git remote set-head origin -a`, or `fd-doctor` will tell you what is missing.
 
 ## The edit gate
 

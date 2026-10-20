@@ -17,18 +17,24 @@ Step 4 uses Claude Code's built-in `code-review` and `security-review` skills. T
 2. Resolve `<topic>` from `--topic`, else from `topic` in STATE.md.
 3. `steps_complete` must not be empty. If it is: `No steps completed yet. Run /flowdeck:fd-execute first.`
 
-## Security audit: ask first
+## Before verification: two questions
 
-Unless STATE.md already has `security_check` (a re-run keeps the earlier answer) or `--security` was given, ask once before running anything:
+Unless STATE.md already has `security_check` and `auto_fix` (a re-run keeps the earlier answers), ask once before running anything. `--security=on|off` and `--fix=on|off` answer them up front.
 
 ```
-Run the security audit as part of verification?
-It uses Claude Code's built-in security-review: slower and costlier than the other checks, and it needs the work committed on a branch plus an origin/HEAD ref.
-[Y] yes (recommended)
-[N] skip it: the verdict can still be VERIFIED, but nobody has checked for injection, auth gaps or leaked secrets, and fd-done will say so.
+Before I verify "<topic>":
+
+1. Security audit? [Y] yes (recommended)  [N] skip
+   Uses Claude Code's built-in security-review: slower and costlier than the other checks. It reviews committed work on this branch against origin/HEAD (a local ref, nothing is pushed), so uncommitted changes are not seen.
+   Skipping lets the verdict be VERIFIED with nobody having checked for injection, auth gaps or leaked secrets; fd-done will say so.
+
+2. Auto-fix? [Y] yes (recommended)  [N] report only
+   If a check fails I will edit your code to fix it and re-run, up to 2 attempts, committing each fix on the topic branch if there is one. Nothing is pushed.
+
+Reply e.g. "Y Y".
 ```
 
-Wait for the answer, then record `security_check: on` or `security_check: skipped` in STATE.md. Step 4 runs the security part only when it is `on`.
+Wait for the answer, then record `security_check: on|skipped` and `auto_fix: on|off` in STATE.md. Step 4 runs the security part only when `security_check` is `on`; the fix loop runs only when `auto_fix` is `on`.
 
 ## Model
 
@@ -109,7 +115,7 @@ Verdict: VERIFIED | VERIFIED (security skipped) | NOT VERIFIED
 
 ### Fix loop (up to 2 attempts, no prompt)
 
-The gate is open in `VERIFY`, so fix the problems yourself rather than asking. Upstream only offers this as a manual option; the automatic loop is a deliberate addition.
+Only when `auto_fix` is `on` (otherwise go straight to the options below). The user was told at the start that code may change, and the gate is open in `VERIFY`, so fix the problems yourself rather than asking. Upstream only offers this as a manual option; the automatic loop is a deliberate addition.
 
 Fix automatically: failing tests, confirmed review bugs and CRITICAL/HIGH findings, security Critical/High findings, and affected files with no test (write the test). Do not fix automatically, and stop the loop: no test runner, security NOT RUN, missing `affect.md`, or a fix that needs a change outside `plan.md`'s scope or a new requirement.
 
