@@ -17,6 +17,10 @@ Step 4 uses Claude Code's built-in `code-review` and `security-review` skills. T
 2. Resolve `<topic>` from `--topic`, else from `topic` in STATE.md.
 3. `steps_complete` must not be empty. If it is: `No steps completed yet. Run /flowdeck:fd-execute first.`
 
+## Model
+
+Your own model is the ceiling for anything you delegate. If you are running on Opus, run Steps 1-3 in one foreground `Agent` call with `model: "sonnet"` and have it return the raw results (test output, coverage per file, unlisted dependents); you keep Step 4 and the verdict. On any other model, run the steps yourself.
+
 ## Step 1: Tests
 
 Read the stage rules listed in the "FlowDeck rules" section of the session context first (testing, security, language patterns). Judge Step 4 against them.

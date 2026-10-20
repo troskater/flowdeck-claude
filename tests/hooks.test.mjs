@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -74,6 +74,31 @@ test("gate: FLOWDECK_DEV_MODE=on bypasses", () => {
     encoding: "utf8",
   });
   assert.equal(r.stdout, "");
+});
+
+const guard = (tool_name, tool_input) => (hook("tool-guard.mjs", { tool_name, tool_input }).stdout.includes('"deny"') ? "deny" : "allow");
+
+test("tool-guard: inert outside a FlowDeck project, active inside", () => {
+  rmSync(planDir, { recursive: true, force: true });
+  assert.equal(guard("Bash", { command: "rm -rf build" }), "allow");
+  mkdirSync(planDir, { recursive: true });
+  assert.equal(guard("Bash", { command: "rm -rf build" }), "deny");
+  assert.equal(guard("Bash", { command: "ls" }), "allow");
+  assert.equal(guard("Read", { file_path: join(project, ".env") }), "deny");
+  assert.equal(guard("Read", { file_path: join(project, "id.pem") }), "deny");
+  assert.equal(guard("Read", { file_path: join(project, "environment.ts") }), "allow");
+  assert.equal(guard("Write", { file_path: join(project, "node_modules", "x", "i.js") }), "deny");
+  assert.equal(guard("Write", { file_path: code }), "allow");
+});
+
+test("autosave: stamps open pipelines, leaves closed ones alone", () => {
+  const cp = join(planDir, "checkpoint.json");
+  writeFileSync(cp, JSON.stringify({ current_command: "fd-execute", current_stage: "EXECUTE", saved_at: "old" }));
+  hook("autosave.mjs", {});
+  assert.notEqual(JSON.parse(readFileSync(cp, "utf8")).saved_at, "old");
+  writeFileSync(cp, JSON.stringify({ current_command: "fd-done", current_stage: "complete", saved_at: "old" }));
+  hook("autosave.mjs", {});
+  assert.equal(JSON.parse(readFileSync(cp, "utf8")).saved_at, "old");
 });
 
 test("session-start: silent in a project FlowDeck has not touched", () => {

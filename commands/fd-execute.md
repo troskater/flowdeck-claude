@@ -13,6 +13,10 @@ After each wave this command calls Claude Code's built-in `code-review` skill.
 
 Not ported in this version: parallel worktree waves and the `--override` and `--keep-worktree` flags. Every step runs sequentially in the main checkout.
 
+## Model
+
+Your own model is the ceiling for anything you delegate. If you are running on Opus, run each step's TDD cycle (Step 4) in one foreground `Agent` call with `model: "sonnet"`, passing it the step text, the relevant files and the rules; it returns what it changed and the test result. You keep the guards, the wave review and the state updates. If it reports it cannot state a step's behavior, ask the user yourself. On any other model, do the steps yourself.
+
 ## Step 1: Guards
 
 Resolve `<topic>` from `--topic`, else from `topic` in `~/.fd-plan/<slug>/STATE.md`.
@@ -77,7 +81,8 @@ For each step:
 2. **Red.** Write a failing test for the behavior, covering the acceptance cases and edge cases. Run it and confirm it fails. Do not write production code before a failing test exists.
 3. **Green.** Write the minimal code that makes the test pass.
 4. **Refactor.** Remove duplication and improve naming. Tests must still pass after this step.
-5. **Record.** Add the step number to `steps_complete` in STATE.md and set `last_action`.
+5. **Verify.** Run the full test suite, not just the new test. If anything fails, undo the refactor and return to Green. Do not refactor unless the suite is green.
+6. **Record.** Add the step number to `steps_complete` in STATE.md and set `last_action`.
 
 Exemptions, which skip Red but still run Behavior and Green: renames and typos (run the tests once), config, migration, DTO, constants and type-only files, and documentation-only steps.
 
