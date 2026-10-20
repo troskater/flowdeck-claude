@@ -1,0 +1,10 @@
+{
+  "name": "flowdeck",
+  "version": "0.0.1",
+  "description": "FlowDeck workflow (fixed pipeline, guarded state) ported to Claude Code. Spike.",
+  "author": {
+    "name": "DVNghiem, troskater"
+  },
+  "license": "MIT",
+  "keywords": ["workflow", "planning", "multi-agent"]
+}

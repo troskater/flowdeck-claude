@@ -1,0 +1,14 @@
+{
+  "name": "flowdeck-marketplace",
+  "description": "Claude Code port of DVNghiem/FlowDeck, a fixed-pipeline multi-agent workflow.",
+  "owner": {
+    "name": "troskater"
+  },
+  "plugins": [
+    {
+      "name": "flowdeck",
+      "source": "./",
+      "description": "FlowDeck workflow (fixed pipeline, guarded state) ported to Claude Code. Spike."
+    }
+  ]
+}
