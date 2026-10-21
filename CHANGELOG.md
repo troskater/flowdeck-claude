@@ -2,6 +2,11 @@
 
 Every change that reaches users bumps the version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (a test checks they match).
 
+## 0.4.2
+
+Fixed
+- Extra skills per stage were easy to skip: in four stage commands the step ran into the next heading, and nothing showed whether it ran. Every stage report now has an `Extra skills (advisory)` section that starts with `Configured: <skills>` (or `Configured: none`).
+
 ## 0.4.1
 
 Changed

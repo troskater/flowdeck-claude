@@ -59,7 +59,9 @@ Be direct. If the premise is weak, say so plainly rather than hedging.
 
 ## Step 3b: Extra skills
 
-Run `fd-state skills review`. It prints the extra skills the user configured for this stage (`/config`, "Extra skills per stage"), one per line; nothing printed means none, so skip this step. Invoke each one in order with the Skill tool, passing the topic and the path of its `plan.md` as args. Run them after both lenses return; add the section to the Step 4 report after the lens findings. Put what each skill reports in a section `Extra skills (advisory)`, one line per finding with the skill name. These findings never block the stage or change its outcome. If a skill is not installed, errors, or is blocked by the edit gate, say so in that section and carry on.## Step 4: Surface findings
+Run `fd-state skills review`. It prints the extra skills the user configured for this stage (`/config`, "Extra skills per stage"), one per line; nothing printed means none. Invoke each one in order with the Skill tool, passing the topic and the path of its `plan.md` as args. Run them after both lenses return; add the section to the Step 4 report after the lens findings. Always include a section `Extra skills (advisory)` in the report, even when none are configured. Its first line is `Configured: <skills from fd-state skills review>` or `Configured: none`, so the user can see this step ran; when none are configured, stop there. Otherwise add one line per finding with the skill name. These findings never block the stage or change its outcome. If a skill is not installed, errors, or is blocked by the edit gate, say so in that section and carry on.
+
+## Step 4: Surface findings
 
 Present both lenses in one report:
 
