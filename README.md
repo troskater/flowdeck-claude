@@ -33,19 +33,32 @@ Or load a local checkout for one session: `claude --plugin-dir <path>`. If your 
 
 Questions appear as Claude Code's native picker (recommended option first, "Other" for free text); typing `Y`, `CONFIRM` or a revision works too. Where the picker is unavailable, such as `claude -p`, the same questions are asked in plain text. Progress lives in `state.json` and the ticks in `plan.md`; FlowDeck does not use a task-list tool.
 
-Planning state lives in `~/.fd-plan/<project>/` (`state.json`, with `STATE.md` and `checkpoint.json` rendered from it, plus one folder per topic). `<project>` is the name of the git top-level folder, or of the session directory outside git, so a `cd` into a subfolder still finds it; `fd-state path` prints it.
+Planning state lives in `~/.fd-plan/<project>/` by default (`state.json`, with `STATE.md` and `checkpoint.json` rendered from it, plus one folder per topic). `<project>` is the name of the git top-level folder, or of the session directory outside git, so a `cd` into a subfolder still finds it; `fd-state path` prints it.
+
+## Settings
+
+Set these in `/config` (or when you enable the plugin). They are stored as the plugin's options in your Claude Code settings.
+
+| Setting | Values | Default |
+|---|---|---|
+| Agent models (`model_profile`) | `inherit`: every agent on your session model. `optimized`: `mapper` and `researcher` on haiku, `coder` and `tester` on sonnet, the rest on your model. `reduced`: every agent one step below your model, haiku at the floor. | `optimized` |
+| Per-agent overrides (`models`) | e.g. `coder=opus,mapper=haiku`. Agents: the nine below; models: `haiku`, `sonnet`, `opus`, `fable`. | empty |
+| Storage (`storage`) | `home`: `~/.fd-plan/<project>/`. `project`: `<project>/.fd-plan/`, which gets its own `.gitignore` (`*`); delete that file if you want to commit your plans. | `home` |
+| Extra skills per stage (`stage_skills`) | e.g. `review=ponytail:ponytail-audit,verify=simplify`. Stages: `task` (before the plan CONFIRM), `review` (before the findings report), `execute` (after the last wave), `verify` (before the report), `done` (before the commit message). Repeat a stage for more than one skill. | empty |
+
+No agent ever runs above your session model: overrides and profiles are capped at it. `fd-state models <your model>` prints what each agent will get. Extra skills run in the main conversation through the Skill tool. Their findings go in an `Extra skills (advisory)` section of the stage's report and never block it, and the edit gate still applies to them. `fd-state skills <stage>` lists what a stage will run. Switching storage does not move existing state; move the folder yourself if you want to keep an open pipeline.
 
 ## What it uses from Claude Code
 
 - **Code navigation:** the `LSP` tool when a [code-intelligence plugin](https://code.claude.com/docs/en/plugins/code-intelligence) and its language server are installed, otherwise Grep, Glob and Read. The `fd-codenav` skill holds the rules. Run `fd-doctor` to see which you have.
-- **Mapping:** the `fd-map` skill runs in the read-only `flowdeck:mapper` agent, pinned to haiku.
+- **Mapping:** the read-only `flowdeck:mapper` agent follows the `fd-map` skill, on the model the settings give it.
 - **Review:** the bundled `code-review` skill and the built-in `security-review`. Neither is replaced by a home-grown version.
 - **Agents:** nine focused agents (`mapper`, `researcher`, `architect`, `planner`, `coder`, `tester`, `reviewer`, `security-auditor`, `debug-specialist`), each with its own tool list: only `coder` can edit files. The main conversation routes and asks; `fd-execute` sends every step to `coder` (a trivial task is the exception), `fd-verify` uses `tester`, `security-auditor` and, on failure, `debug-specialist` then `coder`, `fd-review` runs two `reviewer` lenses in parallel, and `fd-task` uses `researcher`, `architect` and `planner`. Each subagent starts with a large context of its own.
 - **Parallel waves:** a wave with two or more steps runs through the `fd-execute-wave` workflow (`Workflow` tool, authorized by the command). Steps whose file lists in `plan.md` do not intersect run in parallel through `coder`; sharing a file means running in order. This is the shared checkout, not git worktrees: the file lists are trusted, and the full suite runs after the wave.
 - **State:** `fd-state` (in `bin/`, on the Bash PATH while the plugin is enabled) is the only writer. It validates and renders `state.json`, `STATE.md` and `checkpoint.json` together.
 - **Plan mode:** `fd-task` enters plan mode after mapping the codebase and leaves it with the plan. Approval is the CONFIRM. Not available in `claude -p`; the picker or text CONFIRM is used there.
 - **Output style:** optional `FlowDeck` style (`/output-style`) that keeps the model on `AskUserQuestion` and the agents.
-- **Models:** commands run on your session model; a `model:` in a command or skill does not switch it when stages chain. Agents inherit your session model, except `mapper`, which is pinned to haiku. If your environment sets `CLAUDE_CODE_SUBAGENT_MODEL`, that overrides inheritance. For a pinned main model, start with `claude --agent flowdeck:orchestrator`.
+- **Models:** commands run on your session model; a `model:` in a command or skill does not switch it when stages chain. Each stage runs `fd-state models <its model>` and passes the result as the `model` of every agent call, so the Settings above decide what agents run on. That per-call model also takes priority over `CLAUDE_CODE_SUBAGENT_MODEL`. For a pinned main model, start with `claude --agent flowdeck:orchestrator`.
 
 ## Security review needs committed work
 
@@ -75,7 +88,7 @@ Full tables are in [DIFFERENCES.md](DIFFERENCES.md). In short:
 - Upstream's Rust `fdx` tools and dependency graph. Blast radius uses LSP or text search, and without LSP it misses dynamic imports.
 - 12 upstream skills: eleven that need its state files, tools or a pruning step (`change-impact-radar`, `blast-radius-preview`, `failure-replay-engine`, `self-healing-policies`, `telemetry-steward`, `decision-trace`, `session-persistence`, `context-guard`, `repo-memory-graph`, `context-steward` with its `-triggers` stub), and its `code-review`, left out so it cannot shadow the built-in.
 - Separate git worktrees per parallel step (parallel waves share the checkout), `--override`, UI design-first gating, the context-window monitor and desktop notifications.
-- Upstream's per-agent model config, and its separate frontend-coder and devops agents (one `coder` here); see Agents and Models above.
+- Upstream's separate frontend-coder and devops agents (one `coder` here). Per-agent models are settings here, capped at the session model (see Settings).
 - Review is per wave, not per step, and uses Claude Code's built-in reviews instead of upstream's reviewer and security-auditor prompts.
 - `security-review` sees only committed work and needs `origin/HEAD`.
 - Nothing enforces "test before code" except the instruction in `fd-execute`.

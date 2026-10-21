@@ -1,23 +1,22 @@
 // Gatekeeper: while a FlowDeck pipeline is active, blocks code writes until EXECUTE or VERIFY.
 // Projects with no checkpoint, or a closed pipeline, are never gated.
-// shortcut: reads only checkpoint.json under ~/.fd-plan, not STATE.md. upgrade: share a STATE.md reader from lib/.
+// shortcut: reads only checkpoint.json, not STATE.md. upgrade: share a STATE.md reader from lib/.
 import { readFileSync, existsSync } from "node:fs";
 import { join, resolve, relative, isAbsolute } from "node:path";
-import { planRoot as root, planDir } from "../lib/paths.mjs";
+import { planDir } from "../lib/paths.mjs";
 
 const input = JSON.parse(readFileSync(0, "utf8"));
 if (process.env.FLOWDECK_DEV_MODE === "on") process.exit(0);
 
-const planRoot = root();
+const dir = planDir(input.cwd);
 
 // FlowDeck's own state files stay writable at every stage, or fd-task could not save its artifacts.
 const target = input.tool_input?.file_path;
 if (target) {
-  const rel = relative(planRoot, resolve(input.cwd ?? process.cwd(), target));
+  const rel = relative(dir, resolve(input.cwd ?? process.cwd(), target));
   if (rel && !rel.startsWith("..") && !isAbsolute(rel)) process.exit(0);
 }
 
-const dir = planDir(input.cwd);
 try {
   if (JSON.parse(readFileSync(join(dir, "gate.json"), "utf8")).enabled === false) process.exit(0);
 } catch {

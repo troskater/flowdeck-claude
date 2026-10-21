@@ -4,6 +4,8 @@ description: Optimize token usage and context window discipline. Reduce costs an
 origin: FlowDeck
 ---
 
+`<fd>` is this project's FlowDeck directory, the one `fd-state path` prints (`~/.fd-plan/<project>/`, or `<project>/.fd-plan/` when the storage setting is `project`).
+
 # Context Budget Skill
 
 Treat context window as a finite resource. Every token loaded — files, rules, tool outputs, conversation history — consumes budget. Optimizing context improves speed, cuts costs, and prevents mid-session truncation.
@@ -74,7 +76,7 @@ grep -r "^description:" src/skills/ | awk '{print NF, $0}' | sort -n
 - **Split oversized skills** — extract sub-topics into separate skills
 - **Shorten descriptions** — under 25 words is ideal; under 30 is required
 - **Use stage-gated rules** — load heavy rules only in `execute` or `verify` stages
-- **Defer heavy context** — load `~/.fd-plan/<slug>/architecture.md` only when needed
+- **Defer heavy context** — load `<fd>/architecture.md` only when needed
 
 ## Model Routing Strategy
 

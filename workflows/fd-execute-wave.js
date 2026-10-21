@@ -1,7 +1,7 @@
 export const meta = {
   name: 'fd-execute-wave',
   description: 'Run one FlowDeck plan wave: steps with disjoint files in parallel through flowdeck:coder, overlapping steps in order',
-  whenToUse: 'Called by /flowdeck:fd-execute for a wave of two or more steps. args: {wave, steps: [{n, files, brief}]}; files come from the Steps section of plan.md',
+  whenToUse: 'Called by /flowdeck:fd-execute for a wave of two or more steps. args: {wave, model, steps: [{n, files, brief}]}; files come from the Steps section of plan.md, model is the coder model from fd-state models',
   phases: [{ title: 'Guard', detail: 'batch steps by file overlap' }, { title: 'Implement', detail: 'one coder per step, batch by batch' }],
 }
 
@@ -46,7 +46,7 @@ for (const [i, batch] of batches.entries()) {
   // shortcut: shared-checkout parallelism relies on the declared file lists; a test file two steps both create is not detected, upgrade to worktrees if that bites
   const note = batch.length > 1 ? `\n\n${PARALLEL_NOTE}` : ''
   const out = await parallel(batch.map(s => () =>
-    agent(s.brief + note, { agentType: 'flowdeck:coder', schema: RESULT, label: `coder (step ${s.n})`, phase: 'Implement' })
+    agent(s.brief + note, { agentType: 'flowdeck:coder', model: args.model, schema: RESULT, label: `coder (step ${s.n})`, phase: 'Implement' })
       .then(r => r && { n: s.n, ...r })))
   for (const [k, r] of out.entries()) results.push(r ?? { n: batch[k].n, failed: true })
   if (out.some(r => !r || (r.question && !NO_QUESTION.test(r.question.trim())))) {

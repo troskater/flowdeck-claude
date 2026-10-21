@@ -3,6 +3,8 @@ description: FlowDeck pipeline stage. Implement the Steps in plan.md step by ste
 argument-hint: [--topic=<slug>]
 ---
 
+`<fd>` is this project's FlowDeck directory, the one `fd-state path` prints (`~/.fd-plan/<project>/`, or `<project>/.fd-plan/` when the storage setting is `project`).
+
 # Execute
 
 Implement the confirmed plan. This is the only stage that opens the code-edit gate: the gatekeeper blocks Write and Edit until the checkpoint reads `EXECUTE`.
@@ -19,22 +21,24 @@ Not ported in this version: separate git worktrees per parallel step, and the `-
 
 **Agent names.** Set the `description` of every `Agent` call to the agent's own name (`researcher`, `coder`, `tester`), followed by the step in parentheses (`coder (step 1)`, `coder (step 2)`); the workflow labels its coders the same way. Anything else about the step goes in the brief.
 
+**Models.** Before the first `Agent` call in this command, run `fd-state models <main>` once, where `<main>` is the model you are running on (for example `opus`, or your full model id). It prints `agent=model` pairs from the user's FlowDeck settings (`/config`: agent models and per-agent overrides). Pass that model as the `model` parameter of every `Agent` call to that agent. If the command fails or prints nothing, leave `model` out so the agent inherits your model.
+
 ## Delegation
 
 You route; `flowdeck:coder` writes the code. Run each step's TDD cycle (Step 4) in one foreground `Agent` call with `subagent_type: flowdeck:coder`, one step at a time. This keeps test output and file reads out of this conversation and means source, config and test files are only written by the coder. The only exception is a task the user chose to skip review for (`trivial: true` in `checkpoint.json`, from `CONFIRM SKIP`). Without that flag, never edit source, config or test files yourself with Write, Edit or a shell command such as `sed`, however small the step. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so.
 
-- **Model:** omit `model`. The agent inherits your session model.
+- **Model:** the coder model from Models.
 - **Brief:** the subagent cannot see this conversation. Give it the step text, its acceptance cases from the plan's Task section, its files from the Steps and Affect sections, the paths of the stage rules, the Step 4 cycle, every decision that bears on the step (the Constraints and Out of Scope in the plan's Task section, its Approach, review outcomes, and anything the user decided or changed during this stage), and this instruction: never push, never commit, never touch `~/.fd-plan/`, and if the step's behavior is unclear return the question instead of guessing.
 - **Result:** ask for files changed, test command and result, and any open question. Do not accept "tests pass" on its word: run the full suite yourself before recording the step complete. If it returns a question, ask the user.
 - **You keep** the guards, the topic branch, the wave commit and review, and all STATE.md and checkpoint updates.
 
 ## Step 1: Guards
 
-Resolve `<topic>` from `--topic`, else from `topic` in `~/.fd-plan/<slug>/STATE.md`.
+Resolve `<topic>` from `--topic`, else from `topic` in `<fd>/STATE.md`.
 
 Stop with the matching message if any guard fails:
 
-- `~/.fd-plan/<slug>/STATE.md` missing → `No planning workspace. Run /flowdeck:fd-task first.`
+- `<fd>/STATE.md` missing → `No planning workspace. Run /flowdeck:fd-task first.`
 - `plan.md` missing under `<topic>/` → `Error: plan.md not found for topic "<topic>". Run /flowdeck:fd-task first.`
 - `plan_confirmed` is not `true` in STATE.md → `Plan not confirmed. Run /flowdeck:fd-task first.`
 - `checkpoint.json` does not show `current_command: fd-review` with `current_stage: complete` → `Review has not passed. Run /flowdeck:fd-review first.` Exception: `trivial: true` in `checkpoint.json` with `current_command: fd-task` and `current_stage: complete` (the user chose `CONFIRM SKIP`); log `Review skipped (trivial): <skip_reason>` and continue.
@@ -69,7 +73,7 @@ Commits stay local and are never pushed from here. Without this, the security ch
 
 ## Step 3: Open the gate
 
-Only now, with guards passed and the guard decision logged, update `~/.fd-plan/<slug>/checkpoint.json` (keep the existing keys):
+Only now, with guards passed and the guard decision logged, update `<fd>/checkpoint.json` (keep the existing keys):
 
 ```json
 {
@@ -88,7 +92,7 @@ Before the first step, read the stage rules listed in the "FlowDeck rules" secti
 
 Work through the Steps in `plan.md` wave by wave, in the order the plan gives. Skip any step already listed as complete in STATE.md.
 
-**A wave with two or more steps left** goes to Claude Code's `Workflow` tool, which this command authorizes: call it with name `flowdeck:fd-execute-wave` and `args` `{"wave": <N>, "steps": [{"n": <step number>, "files": [<paths from plan.md>], "brief": "<the full coder brief from Delegation, for that step>"}, ...]}`. The workflow groups the steps by file overlap, runs each group's steps in parallel through `flowdeck:coder` and the groups in order, and returns per-step results. The workflow tells parallel coders to run only their own tests; you run the full suite after it returns, then do Step 6 of the cycle (Record) for every step in the result. If the result carries a `question` or a failed step, stop the wave and ask or report. If the `Workflow` tool is unavailable or errors, run the wave's steps one at a time as below and say so.
+**A wave with two or more steps left** goes to Claude Code's `Workflow` tool, which this command authorizes: call it with name `flowdeck:fd-execute-wave` and `args` `{"wave": <N>, "model": "<coder model from Models>", "steps": [{"n": <step number>, "files": [<paths from plan.md>], "brief": "<the full coder brief from Delegation, for that step>"}, ...]}`. The workflow groups the steps by file overlap, runs each group's steps in parallel through `flowdeck:coder` and the groups in order, and returns per-step results. The workflow tells parallel coders to run only their own tests; you run the full suite after it returns, then do Step 6 of the cycle (Record) for every step in the result. If the result carries a `question` or a failed step, stop the wave and ask or report. If the `Workflow` tool is unavailable or errors, run the wave's steps one at a time as below and say so.
 
 **A wave with one step left** is a single `flowdeck:coder` call as below.
 
@@ -127,6 +131,10 @@ Then update `checkpoint.json`:
 ```
 
 Keep `current_stage: EXECUTE` until verification starts, so the gate stays open for fixes.
+
+## Step 5b: Extra skills
+
+Run `fd-state skills execute`. It prints the extra skills the user configured for this stage (`/config`, "Extra skills per stage"), one per line; nothing printed means none, so skip this step. Invoke each one in order with the Skill tool, passing the topic and the path of its `plan.md` as args. Run them once, after the last wave's review and before finishing. The gate is open here, but a skill must not change code outside the plan: report the changes it proposes instead of applying them, unless the user asks. Put what each skill reports in a section `Extra skills (advisory)`, one line per finding with the skill name. These findings never block the stage or change its outcome. If a skill is not installed or errors, say so in that section and carry on.
 
 ## Step 6: Finish
 

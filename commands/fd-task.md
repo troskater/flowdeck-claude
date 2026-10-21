@@ -13,17 +13,19 @@ Pipeline entrypoint. Turns a task description into the confirmed `plan.md` every
 
 If `$ARGUMENTS` is empty, ask the user for a task description before doing anything else. Do not guess or infer the task.
 
-Codebase mapping runs in the `fd-map` skill, which uses the read-only `flowdeck:mapper` subagent. Research (Step 2) goes to `flowdeck:researcher`, and the design and plan drafts (Step 4) to `flowdeck:architect` and `flowdeck:planner`. Those agents are read-only and cannot see this conversation: brief each with the task, the evidence and answers so far, the paths it needs and the template it must fill. You write the files, after CONFIRM.
+Codebase mapping runs in the read-only `flowdeck:mapper` agent, following the `fd-map` skill. Research (Step 2) goes to `flowdeck:researcher`, and the design and plan drafts (Step 4) to `flowdeck:architect` and `flowdeck:planner`. Those agents are read-only and cannot see this conversation: brief each with the task, the evidence and answers so far, the paths it needs and the template it must fill. You write the files, after CONFIRM.
 
 **State writes.** Every change to `STATE.md` or `checkpoint.json` in this command goes through `fd-state`, which is on the Bash PATH while the plugin is enabled: `fd-state set key=value ...` (quote values that contain spaces). It validates the keys and values and renders `state.json`, `STATE.md` and `checkpoint.json` together, so do not edit those files by hand. Where a step below says to update STATE.md or merge into the checkpoint, pass the same keys, leaving out `version`, `project` and `saved_at` (it sets them); append to a list with `steps_complete+=3`. If it rejects a value, fix the value and retry. Only if the `fd-state` command is not found, say so and write the files as the step describes.
 
 **Agent names.** Set the `description` of every `Agent` call to the agent's own name (`researcher`, `coder`, `tester`), followed by what it is working on in parentheses when one stage runs several of the same kind (`researcher (query 1)`, `researcher (query 2)`). Anything else about the query or step goes in the brief.
 
+**Models.** Before the first `Agent` call in this command, run `fd-state models <main>` once, where `<main>` is the model you are running on (for example `opus`, or your full model id). It prints `agent=model` pairs from the user's FlowDeck settings (`/config`: agent models and per-agent overrides). Pass that model as the `model` parameter of every `Agent` call to that agent. If the command fails or prints nothing, leave `model` out so the agent inherits your model.
+
 ## Step 1: Auto-init
 
-`~/.fd-plan/<slug>/` is the directory `fd-state path` prints (named after the git top-level folder, else the session directory), the same one the hooks use. Planning state lives in `~/.fd-plan/<slug>/`.
+`<fd>/` is the directory `fd-state path` prints, the same one the hooks use: `~/.fd-plan/<project>/` (named after the git top-level folder), or `<project>/.fd-plan/` when the storage setting is `project`. Planning state lives in `<fd>/`.
 
-If `~/.fd-plan/<slug>/` does not exist:
+If `<fd>/` does not exist:
 1. Create it, then write `STATE.md` immediately so an interrupted session can resume:
    ```
    status: in_progress
@@ -32,11 +34,11 @@ If `~/.fd-plan/<slug>/` does not exist:
    next_action: complete fd-task steps
    ```
 2. Write `checkpoint.json` with `"current_command": "fd-task"` and `"current_stage": "in_progress"`.
-3. Invoke the `fd-map` skill through the Skill tool to map the codebase. Write the summary it returns to `~/.fd-plan/<slug>/architecture.md`. This file is project-level context. It is not the task's design: Step 6 writes the task's own `architecture.md` under `<topic>/`.
+3. Map the codebase with an `Agent` call: `subagent_type` `flowdeck:mapper`, `description` `mapper`, `model` the mapper model from Models, and the prompt "Map the codebase in <project root>. Follow the steps in ${CLAUDE_PLUGIN_ROOT}/skills/fd-map/SKILL.md and return the summary it describes." If that call errors, invoke the `fd-map` skill through the Skill tool instead. Write the summary to `<fd>/architecture.md`. This file is project-level context. It is not the task's design: Step 6 writes the task's own `architecture.md` under `<topic>/`.
 
 If codebase mapping fails, report the failure and stop. A task planned against an unmapped codebase is not trustworthy.
 
-If `~/.fd-plan/<slug>/architecture.md` already exists, do not overwrite it. Read it instead.
+If `<fd>/architecture.md` already exists, do not overwrite it. Read it instead.
 
 ## Step 1b: Enter plan mode
 
@@ -65,7 +67,7 @@ Proposed queries:
 
 Do not continue until the user answers. **Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Research`, options `Run these queries (Recommended)`, `Skip research`, `Custom queries`, with the numbered queries in the question text.
 
-- **Y:** send the queries to one foreground `Agent` call with `subagent_type: flowdeck:researcher` (for 4-5 independent queries, split them across parallel calls in the same message), briefed with the task, the queries and the paths of `architecture.md` and the prior `~/.fd-plan/<slug>/*/plan.md` files. It follows the `fd-codenav` skill's guidance, reads `CLAUDE.md` / `AGENTS.md` if present, and returns evidence per query. Summarize in 3-5 bullets. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. Then run the queries yourself.
+- **Y:** send the queries to one foreground `Agent` call with `subagent_type: flowdeck:researcher` (for 4-5 independent queries, split them across parallel calls in the same message), briefed with the task, the queries and the paths of `architecture.md` and the prior `<fd>/*/plan.md` files. It follows the `fd-codenav` skill's guidance, reads `CLAUDE.md` / `AGENTS.md` if present, and returns evidence per query. Summarize in 3-5 bullets. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. Then run the queries yourself.
 - **N:** log "Research skipped by user." and add `Note: created without codebase research — may need revision.` under `### Constraints` in `plan.md`.
 - **C:** ask for the queries one per line, use them exactly as given, then run them as in Y.
 
@@ -166,7 +168,9 @@ Every step traces to at least one `R-XX`. Steps in the same wave do not depend o
 
 **Trivial check.** The task is trivial only if it is a rename, typo, config value or version bump, touches at most 2 files, is `low` risk, has a single wave and changes no behavior. If so, propose the shortcut with the plan: `fd-task -> fd-execute -> fd-done`, skipping `fd-review` and `fd-verify`, with the reason stated. The user decides; never apply it on your own.
 
-## Step 5: Confirm
+## Step 4b: Extra skills
+
+Run `fd-state skills task`. It prints the extra skills the user configured for this stage (`/config`, "Extra skills per stage"), one per line; nothing printed means none, so skip this step. Invoke each one in order with the Skill tool, passing the topic and the path of its `plan.md` as args. Run them after the drafts are assembled and before the CONFIRM, so the user sees the findings before approving; show the section with the plan in Step 5. Put what each skill reports in a section `Extra skills (advisory)`, one line per finding with the skill name. These findings never block the stage or change its outcome. If a skill is not installed, errors, or is blocked by the edit gate, say so in that section and carry on.## Step 5: Confirm
 
 **In plan mode** (Step 1b): call `ExitPlanMode` with the whole `plan.md` draft as the plan (all four sections, plus the effort estimate). The user's approval is the CONFIRM. Feedback on a rejected plan is the requested changes: stay in plan mode and return to Step 4. Approval may change the session's permission mode; leave it as the user set it. For a trivial task, once approved, ask with `AskUserQuestion` (header `Pipeline`): `Run the full pipeline (Recommended)` or `Skip review/verify`, which counts as `CONFIRM SKIP`. Then go to Step 6.
 
@@ -185,7 +189,7 @@ Do not write any file before CONFIRM. On requested changes, return to Step 4.
 
 ## Step 6: Save
 
-Derive `<topic>` as a lowercase, hyphenated slug of the task title. Write `plan.md` to `~/.fd-plan/<slug>/<topic>/`.
+Derive `<topic>` as a lowercase, hyphenated slug of the task title. Write `plan.md` to `<fd>/<topic>/`.
 
 Check that it exists and contains its required headings: `## Task` with `### Requirements` and `### Acceptance Criteria`; `## Architecture` with `### Approach` and `### Components`; `## Affect` with `### Affected Files`, `### Risk Level` and `### Parallel Safety`; `## Steps` with at least one `### Wave`. Print what is missing and return to Step 4 if anything is.
 
@@ -193,7 +197,7 @@ Then update `STATE.md`: `topic: <topic>`, `plan_confirmed: true`, `last_action: 
 
 ## Step 7: Update checkpoint
 
-Merge into `~/.fd-plan/<slug>/checkpoint.json`. Keep the existing keys and set:
+Merge into `<fd>/checkpoint.json`. Keep the existing keys and set:
 
 ```json
 {

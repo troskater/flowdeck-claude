@@ -3,6 +3,8 @@ description: FlowDeck pipeline stage. Verify the implementation by running tests
 argument-hint: [--topic=<slug>]
 ---
 
+`<fd>` is this project's FlowDeck directory, the one `fd-state path` prints (`~/.fd-plan/<project>/`, or `<project>/.fd-plan/` when the storage setting is `project`).
+
 # Verify
 
 Run the verification pipeline for the active topic. `/flowdeck:fd-done` will not close a task until this passes.
@@ -17,9 +19,11 @@ Step 4 uses Claude Code's built-in `code-review` and `security-review` skills. T
 
 **Agent names.** Set the `description` of every `Agent` call to the agent's own name (`researcher`, `coder`, `tester`), followed by what it is working on in parentheses when one stage runs several of the same kind (`coder (fix: <failing test>)`, `coder (fix: <finding>)`). Anything else about the check or step goes in the brief.
 
+**Models.** Before the first `Agent` call in this command, run `fd-state models <main>` once, where `<main>` is the model you are running on (for example `opus`, or your full model id). It prints `agent=model` pairs from the user's FlowDeck settings (`/config`: agent models and per-agent overrides). Pass that model as the `model` parameter of every `Agent` call to that agent. If the command fails or prints nothing, leave `model` out so the agent inherits your model.
+
 ## Pre-flight
 
-1. `~/.fd-plan/<slug>/STATE.md` must exist. If not: `No planning workspace. Run /flowdeck:fd-task first.`
+1. `<fd>/STATE.md` must exist. If not: `No planning workspace. Run /flowdeck:fd-task first.`
 2. Resolve `<topic>` from `--topic`, else from `topic` in STATE.md.
 3. `steps_complete` must not be empty. If it is: `No steps completed yet. Run /flowdeck:fd-execute first.`
 
@@ -48,7 +52,7 @@ Wait for the answer, then record `security_check: on|skipped` and `auto_fix: on|
 
 Run Steps 1-3 in one foreground `Agent` call with `subagent_type: flowdeck:tester` so test logs stay out of this conversation. It returns only: pass/fail per check, the failing test names with the first lines of each error, coverage per affected file, and dependents the Affect section missed. You keep Step 4, the report and the verdict.
 
-Omit `model` on every delegate here; they inherit your session model. The tester cannot see this conversation, so brief it with the topic, the path of `plan.md` (its Affect section) and the stage rules, and the Step 1-3 text. It has no edit tools. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. If it cannot run the suite (no runner), it says so and you report that; never pass by default.
+Give every delegate here its model from Models. The tester cannot see this conversation, so brief it with the topic, the path of `plan.md` (its Affect section) and the stage rules, and the Step 1-3 text. It has no edit tools. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. If it cannot run the suite (no runner), it says so and you report that; never pass by default.
 
 ## Step 1: Tests
 
@@ -69,7 +73,7 @@ Only for web projects (a frontend framework in the manifest, or `public/index.ht
 
 ## Step 3: Regression scope
 
-Read the Affect section of `~/.fd-plan/<slug>/<topic>/plan.md` and take its Affected Files list as the regression scope.
+Read the Affect section of `<fd>/<topic>/plan.md` and take its Affected Files list as the regression scope.
 
 For each affected file, confirm it has test coverage. An uncovered changed file is a HIGH finding.
 
@@ -90,7 +94,9 @@ If the Affect section is missing, skip this step, record that the regression sco
 
 If the Security check was chosen but cannot run, its status is **NOT RUN** and the verdict is NOT VERIFIED. Tell the user what is missing and offer: fix the setup, or switch to skipping (set `security_check: skipped` and record the reason in STATE.md).
 
-## Step 5: Report
+## Step 4b: Extra skills
+
+Run `fd-state skills verify`. It prints the extra skills the user configured for this stage (`/config`, "Extra skills per stage"), one per line; nothing printed means none, so skip this step. Invoke each one in order with the Skill tool, passing the topic and the path of its `plan.md` as args. Run them after the checks in Steps 1-4; add the section to the Step 5 report. They do not change the verdict, and the fix loop does not act on them. Put what each skill reports in a section `Extra skills (advisory)`, one line per finding with the skill name. These findings never block the stage or change its outcome. If a skill is not installed, errors, or is blocked by the edit gate, say so in that section and carry on.## Step 5: Report
 
 ```
 ════════════════════════════════════════════════════
@@ -144,7 +150,7 @@ If the verdict is now VERIFIED, continue as above. Stop the loop early if an att
 
 ## Step 7: Checkpoint
 
-Merge into `~/.fd-plan/<slug>/checkpoint.json`:
+Merge into `<fd>/checkpoint.json`:
 
 ```json
 {

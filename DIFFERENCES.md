@@ -5,7 +5,7 @@ Compared 2026-10-20 against upstream's `src/commands`, `src/hooks`, `src/service
 ## Same
 - Five stages (`fd-task`, `fd-review`, `fd-execute`, `fd-verify`, `fd-done`) plus `fd-checkpoint`, `fd-resume`, `fd-status`.
 - One `plan.md` with Task, Architecture, Affect and Steps sections instead of upstream's four files (0.3.1), research gate, one-question-at-a-time with question and reuse suppression, effort estimate, CEO and eng review lenses, slop check, commit and push questions.
-- State in `~/.fd-plan/<slug>/` (`STATE.md`, `checkpoint.json`). Here both are rendered from `state.json` by `bin/fd-state`, and `<slug>` is the git top-level folder's name.
+- State in `~/.fd-plan/<slug>/` (`STATE.md`, `checkpoint.json`), or `<project>/.fd-plan/` with the `storage` setting. Here both are rendered from `state.json` by `bin/fd-state`, and `<slug>` is the git top-level folder's name.
 - Approval gates: CONFIRM at the end of `fd-task` and `fd-review`, none after.
 
 ## Replaced with Claude Code built-ins
@@ -14,7 +14,7 @@ Compared 2026-10-20 against upstream's `src/commands`, `src/hooks`, `src/service
 | `fdx-graph` code graph (Rust) | LSP, then Grep/Glob/Read, then Explore (`fd-codenav`). No persistent graph. |
 | `@reviewer` after each step | Built-in `code-review` (`high`) after each wave |
 | `@security-auditor` | `flowdeck:security-auditor`, which runs the built-in `security-review`; needs a committed branch and `origin/HEAD` |
-| `@mapper` | `flowdeck:mapper` (haiku), used by the `fd-map` skill |
+| `@mapper` | `flowdeck:mapper`, following the `fd-map` skill |
 | `@researcher`, `@architect`, `@planner`, `@reviewer`, `@tester`, `@debug-specialist` | Same names under `flowdeck:` |
 | `@backend-coder`, `@frontend-coder`, `@devops` | One `flowdeck:coder` |
 | `@orchestrator` | Main conversation; `flowdeck:orchestrator` is an optional launch target |
@@ -47,6 +47,5 @@ Spike results (2026-10-20, `claude -p --model sonnet`): `model:` in a chained sk
 
 So stages cannot be pinned, and the rule is: **a delegate never runs above the session model.**
 - Stages run on the session model.
-- `mapper` always runs on haiku; every other agent inherits the session model.
+- Agent models come from the `model_profile` setting (`inherit`, `optimized`, `reduced`) and the optional per-agent `models` overrides, passed as the `Agent` call's `model` and capped at the session model (see README, Settings). This replaces upstream's per-agent `agentModels`.
 - Delegation (also a context saver, not only a cost one): `fd-execute` runs every step in `coder` (trivial tasks excepted), `fd-verify` runs its tests/regression in `tester`, the security scan in `security-auditor` and each fix attempt in `debug-specialist` then `coder`, and `fd-review` runs its two lenses as parallel `reviewer` calls. `fd-task` uses `researcher`, `architect` and `planner`. Measured: a general-purpose subagent starts at about 97k tokens (mostly the user setup), about 70% cache-read once warm.
-- Nothing is delegated to a different model apart from the haiku map.

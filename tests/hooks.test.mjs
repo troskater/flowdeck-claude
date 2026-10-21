@@ -16,6 +16,7 @@ const planDir = join(home, ".fd-plan", slug);
 const env = { ...process.env, HOME: home, USERPROFILE: home };
 delete env.FLOWDECK_DEV_MODE;
 delete env.CLAUDE_PROJECT_DIR;
+for (const k of Object.keys(env)) if (k.startsWith("CLAUDE_PLUGIN_OPTION_")) delete env[k];
 
 const hook = (name, payload) =>
   spawnSync("node", [join(root, "hooks", name)], { input: JSON.stringify({ cwd: project, ...payload }), env, encoding: "utf8" });
@@ -244,6 +245,53 @@ test("wave: a step with no file list runs alone", async () => {
     { n: 3, files: ["b"], brief: "" },
   ]);
   assert.deepEqual(out.batches, [[1], [2], [3]]);
+});
+
+const models = (main, opts = {}) => {
+  const extra = Object.fromEntries(Object.entries(opts).map(([k, v]) => [`CLAUDE_PLUGIN_OPTION_${k.toUpperCase()}`, v]));
+  const r = spawnSync("node", [join(root, "bin", "fd-state"), "models", main], { cwd: project, env: { ...env, ...extra }, encoding: "utf8" });
+  return { ...Object.fromEntries(r.stdout.trim().split(" ").map((p) => p.split("="))), stderr: r.stderr };
+};
+
+test("models: profiles, overrides, and the cap at the main model", () => {
+  const def = models("claude-opus-5-5");
+  assert.deepEqual([def.mapper, def.coder, def.reviewer], ["haiku", "sonnet", "opus"]);
+  assert.equal(models("opus", { model_profile: "inherit" }).coder, "opus");
+  const opt = models("opus", { model_profile: "optimized" });
+  assert.deepEqual([opt.mapper, opt.coder, opt.reviewer], ["haiku", "sonnet", "opus"]);
+  assert.equal(models("haiku", { model_profile: "optimized" }).coder, "haiku");
+  const red = models("sonnet", { model_profile: "reduced" });
+  assert.deepEqual([red.reviewer, red.coder], ["haiku", "haiku"]);
+  const over = models("sonnet", { models: "coder=fable, mapper=haiku, bogus=x" });
+  assert.deepEqual([over.coder, over.mapper], ["sonnet", "haiku"]);
+  assert.match(over.stderr, /bogus=x/);
+});
+
+test("skills: a stage gets its configured skills in order, bad entries are ignored", () => {
+  const skills = (stage, value) =>
+    spawnSync("node", [join(root, "bin", "fd-state"), "skills", stage], { cwd: project, env: { ...env, CLAUDE_PLUGIN_OPTION_STAGE_SKILLS: value }, encoding: "utf8" });
+  const value = "review=ponytail:ponytail-audit, fd-review=simplify, verify=simplify, plan=x, review=$(rm x)";
+  const r = skills("fd-review", value);
+  assert.equal(r.stdout.trim(), "ponytail:ponytail-audit\nsimplify");
+  assert.match(r.stderr, /plan=x/);
+  assert.match(r.stderr, /\$\(rm x\)/);
+  assert.equal(skills("done", value).stdout, "");
+  assert.notEqual(skills("bogus", value).status, 0);
+});
+
+test("storage=project: state lives in the project, ignores itself, and the gate follows it", () => {
+  const settings = join(home, ".claude", "settings.json");
+  mkdirSync(dirname(settings), { recursive: true });
+  writeFileSync(settings, JSON.stringify({ pluginConfigs: { "flowdeck@flowdeck-marketplace": { options: { storage: "project" } } } }));
+  const r = spawnSync("node", [join(root, "bin", "fd-state"), "set", "current_command=fd-task", "current_stage=in_progress"], { cwd: project, env, encoding: "utf8" });
+  assert.equal(r.status, 0, r.stderr);
+  const local = join(project, ".fd-plan");
+  assert.equal(readFileSync(join(local, ".gitignore"), "utf8"), "*\n");
+  assert.equal(JSON.parse(readFileSync(join(local, "checkpoint.json"), "utf8")).current_stage, "in_progress");
+  assert.equal(gate(code), "deny");
+  assert.equal(gate(join(local, "topic", "plan.md")), "allow");
+  rmSync(settings);
+  rmSync(local, { recursive: true, force: true });
 });
 
 test("version: plugin.json and marketplace.json agree", () => {

@@ -2,6 +2,8 @@
 description: Force-save session state to state.json (rendered to STATE.md and checkpoint.json) so the work can be resumed later
 ---
 
+`<fd>` is this project's FlowDeck directory, the one `fd-state path` prints (`~/.fd-plan/<project>/`, or `<project>/.fd-plan/` when the storage setting is `project`).
+
 # Checkpoint
 
 Save the current session state so `/flowdeck:fd-resume` can pick the work up later.
@@ -10,11 +12,11 @@ A Stop hook refreshes `saved_at` after each turn, but only this command corrects
 
 ## Steps
 
-1. `~/.fd-plan/<slug>/STATE.md` must exist. If not: `No planning workspace. Run /flowdeck:fd-task to start.`
+1. `<fd>/STATE.md` must exist. If not: `No planning workspace. Run /flowdeck:fd-task to start.`
 
 2. Read STATE.md and any existing `checkpoint.json`.
 
-3. If `~/.fd-plan/<slug>/<topic>/plan.md` exists, scan its Steps section for steps marked done (`- [x]`) and make `steps_complete` match.
+3. If `<fd>/<topic>/plan.md` exists, scan its Steps section for steps marked done (`- [x]`) and make `steps_complete` match.
 
 4. Save with one Bash call to `fd-state` (on PATH while the plugin is enabled), which validates the values and renders `state.json`, `STATE.md` and `checkpoint.json` together; do not edit those files by hand: `fd-state set status=<status> steps_complete=<0,1,...> blockers=<...>`. Pass only what needs correcting; everything else is kept, and `saved_at` is set for you. Only if the command is not found, say so and update STATE.md and `checkpoint.json` by hand, merging into the existing file and never dropping fields an earlier command wrote.
 
@@ -30,6 +32,6 @@ If the file cannot be written, report the failure. Do not claim a checkpoint tha
 ```
 Checkpoint saved
    Topic: <topic> | Command: <current_command> -> <current_stage>
-   File:  ~/.fd-plan/<slug>/checkpoint.json
+   File:  <fd>/checkpoint.json
    Safe to close the session. Resume with /flowdeck:fd-resume.
 ```

@@ -1,10 +1,38 @@
 {
   "name": "flowdeck",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "FlowDeck workflow (fixed pipeline, guarded state) ported to Claude Code.",
   "author": {
     "name": "DVNghiem, troskater"
   },
   "license": "MIT",
-  "keywords": ["workflow", "planning", "multi-agent"]
+  "keywords": ["workflow", "planning", "multi-agent"],
+  "userConfig": {
+    "model_profile": {
+      "type": "string",
+      "title": "Agent models",
+      "description": "inherit: every agent on your session model. optimized: mapper and researcher on haiku, coder and tester on sonnet, the rest on your model. reduced: every agent one step below your model (haiku at the floor). No agent runs above your session model.",
+      "options": ["inherit", "optimized", "reduced"],
+      "default": "optimized"
+    },
+    "models": {
+      "type": "string",
+      "title": "Per-agent model overrides",
+      "description": "Optional, e.g. coder=opus,mapper=haiku. Agents: mapper, researcher, architect, planner, coder, tester, reviewer, security-auditor, debug-specialist. Models: haiku, sonnet, opus, fable. Still capped at your session model.",
+      "default": ""
+    },
+    "storage": {
+      "type": "string",
+      "title": "Where FlowDeck keeps plans and state",
+      "description": "home: ~/.fd-plan/<project>/. project: <project>/.fd-plan/ (git-ignored by its own .gitignore; delete that file to commit your plans). Switching does not move existing state.",
+      "options": ["home", "project"],
+      "default": "home"
+    },
+    "stage_skills": {
+      "type": "string",
+      "title": "Extra skills per stage",
+      "description": "Optional skills a stage runs at a fixed point, e.g. review=ponytail:ponytail-audit,verify=simplify. Stages: task, review, execute, verify, done; repeat a stage for more than one skill. Findings are reported as advisory and never block the stage.",
+      "default": ""
+    }
+  }
 }

@@ -4,6 +4,8 @@ description: Identify which areas of a proposed change are weakly covered by tes
 origin: FlowDeck
 ---
 
+`<fd>` is this project's FlowDeck directory, the one `fd-state path` prints (`~/.fd-plan/<project>/`, or `<project>/.fd-plan/` when the storage setting is `project`).
+
 # Test Gap Detector
 
 Activate this skill before implementing a feature or fix. Get back a ranked list of coverage gaps and the minimum viable tests to close them.
@@ -25,7 +27,7 @@ Activate this skill before implementing a feature or fix. Get back a ranked list
 3. For files with tests, scan for untested branches:
    - Count `if`, `else`, `catch`, `switch` statements
    - Cross-reference with test file to see which paths are exercised
-4. Check `~/.fd-plan/<slug>/.codebase/FAILURES.json` for prior failures on these paths — flag as regression gap if no regression test exists
+4. Check `<fd>/.codebase/FAILURES.json` for prior failures on these paths — flag as regression gap if no regression test exists
 5. For external calls (fetch, db.query, sendEmail), check for integration test coverage
 6. Rank gaps by risk (auth > payment > data > logic > UI)
 7. Produce minimum viable test set (top 3–5 tests)

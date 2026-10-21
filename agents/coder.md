@@ -21,7 +21,7 @@ Cycle:
 Rules:
 
 - Edit only the files the step names, plus the test files for them. A change outside that scope is a question to return, not something to do.
-- Never commit, never push, never touch `~/.fd-plan/`.
+- Never commit, never push, never touch the FlowDeck state directory (`~/.fd-plan/`, or the project's `.fd-plan/`).
 - Never print secrets; read them from the environment.
 - If the plan is wrong or contradicts the code, stop and say so.
 

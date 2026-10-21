@@ -2,6 +2,24 @@
 
 Every change that reaches users bumps the version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (a test checks they match).
 
+## 0.4.0
+
+Added
+- Settings in `/config` (the plugin's `userConfig`):
+  - `model_profile`: `inherit`, `optimized` or `reduced` (see README, Settings).
+  - `models`: per-agent overrides such as `coder=opus,mapper=haiku`.
+  - `storage`: `home` (`~/.fd-plan/<project>/`) or `project` (`<project>/.fd-plan/`, which ignores itself in git).
+  - `stage_skills`: your own skills to run at a fixed point in a stage, such as `review=ponytail:ponytail-audit`. Their findings are reported as advisory and never block the stage. `fd-state skills <stage>` lists them.
+- No agent runs above the session model.
+- `fd-state models <main model>` prints the model each agent gets. Every stage runs it once and passes the result as the `model` of its agent calls, including the coders in the wave workflow.
+- `fd-doctor` shows the resolved agent models.
+
+Changed
+- The default profile is `optimized`, so `researcher` now runs on haiku and `coder` and `tester` on sonnet (capped at your model); before, every agent but `mapper` used your session model. Choose `inherit` to keep that.
+- `fd-task` maps the codebase with an `Agent` call to `flowdeck:mapper` (so it can take a model) that follows the `fd-map` skill, and falls back to the skill if the call errors.
+- Commands and skills refer to the state directory as `<fd>`, the folder `fd-state path` prints, instead of a fixed `~/.fd-plan/<slug>`.
+- The edit gate exempts only this project's state directory, wherever it lives, instead of all of `~/.fd-plan/`.
+
 ## 0.3.3
 
 Fixed

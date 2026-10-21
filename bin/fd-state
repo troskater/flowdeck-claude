@@ -4,11 +4,15 @@
 //   fd-state set key=value ... [key+=value ...]   validate, merge, write all three files
 //   fd-state get [key]                            print state.json (or one key)
 //   fd-state path                                 print this project's FlowDeck directory
+//   fd-state models <main model>                  print agent=model pairs from the model settings
+//   fd-state skills <stage>                       print the extra skills that stage runs, one per line
 //   fd-state --help                               valid keys and values
 // Values parse as JSON when they can (true, 3, null, ["a"]), else stay strings. `key+=v` appends to a list.
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from "node:fs";
 import { join, basename } from "node:path";
-import { planDir } from "../lib/paths.mjs";
+import { planDir, projectRoot } from "../lib/paths.mjs";
+import { option, stageSkills } from "../lib/config.mjs";
+import { modelsFor, LADDER } from "../lib/models.mjs";
 
 const ENUMS = {
   status: ["in_progress", "executing", "executed", "verified", "not_verified", "complete", "done", "cancelled"],
@@ -54,8 +58,10 @@ function coerce(key, v) {
   return fail(`unknown key ${key}`);
 }
 
-const dir = planDir(process.cwd(), process.env.FD_SLUG || undefined);
-const slug = basename(dir);
+const root = projectRoot();
+const dir = planDir(root, process.env.FD_SLUG || undefined);
+const inProject = dir === join(root, ".fd-plan");
+const slug = process.env.FD_SLUG || basename(root);
 const paths = { state: join(dir, "state.json"), md: join(dir, "STATE.md"), cp: join(dir, "checkpoint.json") };
 
 // First write in a project that predates state.json: import what STATE.md and checkpoint.json hold.
@@ -87,6 +93,8 @@ function save(s) {
   s.project = slug;
   s.saved_at = new Date().toISOString();
   mkdirSync(dir, { recursive: true });
+  // project storage: the folder ignores itself, so plans are not committed unless the user deletes this file
+  if (inProject && !existsSync(join(dir, ".gitignore"))) writeFileSync(join(dir, ".gitignore"), "*\n");
   const show = (v) => (Array.isArray(v) ? v.join(",") : v === null ? "null" : String(v));
   const md = STATE_MD.filter((k) => k in s).map((k) => `${k}: ${show(s[k])}`).join("\n") + "\n";
   const cp = Object.fromEntries([["version", "1"], ...CHECKPOINT.filter((k) => k in s).map((k) => [k, s[k]])]);
@@ -118,8 +126,17 @@ if (cmd === "set") {
   console.log(JSON.stringify(rest[0] ? s[rest[0]] ?? null : s, null, 2));
 } else if (cmd === "path") {
   console.log(dir);
+} else if (cmd === "models") {
+  if (!rest[0]) fail("models needs the main model, e.g. fd-state models opus");
+  const { models, ignored } = modelsFor(rest[0], option("model_profile", root), option("models", root));
+  if (ignored.length) process.stderr.write(`fd-state: ignored model overrides ${ignored.join(", ")} (use agent=${LADDER.join("|")})\n`);
+  console.log(Object.entries(models).map(([a, m]) => `${a}=${m}`).join(" "));
+} else if (cmd === "skills") {
+  const { skills, ignored } = stageSkills(rest[0] ?? "", option("stage_skills", root));
+  if (ignored.length) process.stderr.write(`fd-state: ignored stage skills ${ignored.join(", ")} (use stage=skill, stage one of task|review|execute|verify|done)\n`);
+  if (skills.length) console.log(skills.join("\n"));
 } else {
-  console.log(`usage: fd-state set key=value ... | fd-state get [key] | fd-state path\nkeys: ${KEYS.join(", ")}\n${Object.entries(ENUMS).map(([k, v]) => `${k}: ${v.join("|")}`).join("\n")}`);
+  console.log(`usage: fd-state set key=value ... | fd-state get [key] | fd-state path | fd-state models <main model> | fd-state skills <stage>\nkeys: ${KEYS.join(", ")}\n${Object.entries(ENUMS).map(([k, v]) => `${k}: ${v.join("|")}`).join("\n")}`);
   process.exit(cmd === "--help" ? 0 : 1);
 }
 } catch (e) {

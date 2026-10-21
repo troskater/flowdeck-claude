@@ -4,13 +4,13 @@ argument-hint: [--topic=<slug>] [--all]
 allowed-tools: Read, Glob, Bash(fd-state path)
 ---
 
-`~/.fd-plan/<slug>/` is the directory `fd-state path` prints (named after the git top-level folder, else the session directory), the same one the hooks use. Do not change any file.
+`<fd>/` is the directory `fd-state path` prints, the same one the hooks use: `~/.fd-plan/<project>/` (named after the git top-level folder), or `<project>/.fd-plan/` when the storage setting is `project`. Do not change any file.
 
 Input: $ARGUMENTS
 
 ## Default: active topic
 
-Read `~/.fd-plan/<slug>/state.json` (every field), falling back to `checkpoint.json`, then `STATE.md` (say so if you fall back). `<topic>` is `--topic`, else `topic` from the state. If none of the three exists: `No planning workspace. Run /flowdeck:fd-task <description> to start.` If `--topic` names a topic with no directory: `Topic '<topic>' not found.` and list the topics that exist.
+Read `<fd>/state.json` (every field), falling back to `checkpoint.json`, then `STATE.md` (say so if you fall back). `<topic>` is `--topic`, else `topic` from the state. If none of the three exists: `No planning workspace. Run /flowdeck:fd-task <description> to start.` If `--topic` names a topic with no directory: `Topic '<topic>' not found.` and list the topics that exist.
 
 Print one block:
 
@@ -37,4 +37,4 @@ Show each blocker with the command that clears it, e.g. `Affect section missing 
 
 ## `--all`
 
-Glob the topic directories under `~/.fd-plan/<slug>/` and list each as `<icon> <topic> — <stage> | updated <time>`, marking the active one. Stage per topic: STATE.md `status: complete` → `done`; `steps_complete` non-empty → `execute`; `plan.md` present → `task`. Finish with `Total: N topics | n done | n in progress | n planned`.
+Glob the topic directories under `<fd>/` and list each as `<icon> <topic> — <stage> | updated <time>`, marking the active one. Stage per topic: STATE.md `status: complete` → `done`; `steps_complete` non-empty → `execute`; `plan.md` present → `task`. Finish with `Total: N topics | n done | n in progress | n planned`.

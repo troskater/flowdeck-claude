@@ -3,6 +3,8 @@ description: Two-lens review of the plan before execution — CEO review challen
 argument-hint: [--topic=<slug>]
 ---
 
+`<fd>` is this project's FlowDeck directory, the one `fd-state path` prints (`~/.fd-plan/<project>/`, or `<project>/.fd-plan/` when the storage setting is `project`).
+
 # Review
 
 Review the plan `/flowdeck:fd-task` produced, through two independent lenses, before any code is written.
@@ -11,17 +13,19 @@ Review the plan `/flowdeck:fd-task` produced, through two independent lenses, be
 
 **Asking.** Every decision in this command is asked with the `AskUserQuestion` tool, and the text layouts shown are only the fallback for when the tool is unavailable (non-interactive runs) or denied. If `AskUserQuestion` is not in your tool list but `ToolSearch` is, load it first with `ToolSearch` query `select:AskUserQuestion`. Use 2-4 short options, your recommendation first and labelled `(Recommended)`; free text arrives as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid.
 
-Run the two lenses (Steps 2 and 3) as two foreground `Agent` calls (`subagent_type: flowdeck:reviewer`, read-only; one lens per call) sent in the same message so they run in parallel. Omit `model` so they inherit yours: judgment work stays on your model. A lens that did not write the plan does not anchor on it. Each subagent cannot see this conversation, so brief it with the lens text, the topic's `plan.md` path plus the project `architecture.md`, and ask for findings only, each marked blocking or advisory with its evidence. You merge the results into the Step 4 report and handle Step 5 yourself. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. Then run that lens yourself.
+Run the two lenses (Steps 2 and 3) as two foreground `Agent` calls (`subagent_type: flowdeck:reviewer`, read-only; one lens per call) sent in the same message so they run in parallel. Pass the reviewer model from Models. A lens that did not write the plan does not anchor on it. Each subagent cannot see this conversation, so brief it with the lens text, the topic's `plan.md` path plus the project `architecture.md`, and ask for findings only, each marked blocking or advisory with its evidence. You merge the results into the Step 4 report and handle Step 5 yourself. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. Then run that lens yourself.
 
 **State writes.** Every change to `STATE.md` or `checkpoint.json` in this command goes through `fd-state`, which is on the Bash PATH while the plugin is enabled: `fd-state set key=value ...` (quote values that contain spaces). It validates the keys and values and renders `state.json`, `STATE.md` and `checkpoint.json` together, so do not edit those files by hand. Where a step below says to update STATE.md or merge into the checkpoint, pass the same keys, leaving out `version`, `project` and `saved_at` (it sets them); append to a list with `steps_complete+=3`. If it rejects a value, fix the value and retry. Only if the `fd-state` command is not found, say so and write the files as the step describes.
 
 **Agent names.** Set the `description` of every `Agent` call to the agent's own name (`researcher`, `coder`, `tester`), followed by what it is working on in parentheses so the user can tell several of the same kind apart: `reviewer (CEO lens)` and `reviewer (Eng lens)`, with the same labels on a re-review. Keep the CEO and Eng names in your own text too. The lens text itself goes in the brief.
 
+**Models.** Before the first `Agent` call in this command, run `fd-state models <main>` once, where `<main>` is the model you are running on (for example `opus`, or your full model id). It prints `agent=model` pairs from the user's FlowDeck settings (`/config`: agent models and per-agent overrides). Pass that model as the `model` parameter of every `Agent` call to that agent. If the command fails or prints nothing, leave `model` out so the agent inherits your model.
+
 ## Step 1: Load the plan
 
-Resolve `<topic>` from `--topic`, else from `topic` in `~/.fd-plan/<slug>/STATE.md`. If neither exists, stop and tell the user to run `/flowdeck:fd-task` first.
+Resolve `<topic>` from `--topic`, else from `topic` in `<fd>/STATE.md`. If neither exists, stop and tell the user to run `/flowdeck:fd-task` first.
 
-Check that `~/.fd-plan/<slug>/<topic>/plan.md` exists and contains its required headings (`## Task`: Requirements, Acceptance Criteria; `## Architecture`: Approach, Components; `## Affect`: Affected Files, Risk Level, Parallel Safety; `## Steps`: at least one Wave).
+Check that `<fd>/<topic>/plan.md` exists and contains its required headings (`## Task`: Requirements, Acceptance Criteria; `## Architecture`: Approach, Components; `## Affect`: Affected Files, Risk Level, Parallel Safety; `## Steps`: at least one Wave).
 
 If any is missing or a heading is absent, stop and print:
 
@@ -31,9 +35,9 @@ If any is missing or a heading is absent, stop and print:
 Run /flowdeck:fd-task to regenerate the plan.
 ```
 
-Otherwise read it. Also read `~/.fd-plan/<slug>/architecture.md` for project-level context. Do not review a partial plan.
+Otherwise read it. Also read `<fd>/architecture.md` for project-level context. Do not review a partial plan.
 
-If `~/.fd-plan/<slug>/lessons.md` exists, read it and give each lens subagent the lines that match this project's tech stack or the task's area. They are patterns earlier reviews flagged.
+If `<fd>/lessons.md` exists, read it and give each lens subagent the lines that match this project's tech stack or the task's area. They are patterns earlier reviews flagged.
 
 ## Step 2: CEO review — challenge the premise
 
@@ -53,7 +57,9 @@ Be direct. If the premise is weak, say so plainly rather than hedging.
 3. **Test coverage** — does every acceptance criterion in the Task section have a step that makes it verifiable? Which steps ship untested behavior?
 4. **Blast radius** — cross-check the Affect section against the codebase. Re-run the blast-radius procedure from the `fd-codenav` skill on the affected files, and compare it with the Affect section. Flag any dependent the analysis missed, and any task pair marked **Can Parallel** whose file lists actually overlap. If only Grep was available, say the check is text-based and does not follow transitive or dynamic dependencies.
 
-## Step 4: Surface findings
+## Step 3b: Extra skills
+
+Run `fd-state skills review`. It prints the extra skills the user configured for this stage (`/config`, "Extra skills per stage"), one per line; nothing printed means none, so skip this step. Invoke each one in order with the Skill tool, passing the topic and the path of its `plan.md` as args. Run them after both lenses return; add the section to the Step 4 report after the lens findings. Put what each skill reports in a section `Extra skills (advisory)`, one line per finding with the skill name. These findings never block the stage or change its outcome. If a skill is not installed, errors, or is blocked by the edit gate, say so in that section and carry on.## Step 4: Surface findings
 
 Present both lenses in one report:
 
@@ -94,24 +100,24 @@ or describe the revisions you want.
 **Wait for the user.** Do not proceed until they respond. **Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Review`, options `Confirm (Recommended)` and `Request revisions` (the revisions arrive as "Other" text); when there are blocking findings add `Accept the risk and continue`, and never treat plain Confirm as accepting them.
 
 - **CONFIRM:** go to Step 6. Record each advisory finding the user accepted as-is.
-- **Revisions requested:** apply them to the files under `~/.fd-plan/<slug>/<topic>/`, then re-run Steps 2–4 on the revised set.
+- **Revisions requested:** apply them to the files under `<fd>/<topic>/`, then re-run Steps 2–4 on the revised set.
 
 Do not move past blocking findings unless the user explicitly accepts the risk. Record that decision in `STATE.md`.
 
 ## Step 5b: Capture lessons
 
-After CONFIRM, append the review's recurring patterns to `~/.fd-plan/<slug>/lessons.md` (create it if absent), one line each: `- fd-review (<topic>, <date>): <pattern> — <recommendation>`. Take them from findings of either lens that reflect a habit rather than a one-off, for example scope creep, a wrong-problem premise, an architecture smell or a blast-radius miss. Skip the step if there were none, and never rewrite earlier lines.
+After CONFIRM, append the review's recurring patterns to `<fd>/lessons.md` (create it if absent), one line each: `- fd-review (<topic>, <date>): <pattern> — <recommendation>`. Take them from findings of either lens that reflect a habit rather than a one-off, for example scope creep, a wrong-problem premise, an architecture smell or a blast-radius miss. Skip the step if there were none, and never rewrite earlier lines.
 
 ## Step 6: Update state and checkpoint
 
-Update `~/.fd-plan/<slug>/STATE.md`:
+Update `<fd>/STATE.md`:
 
 ```
 last_action: Review complete — plan confirmed
 next_action: run /flowdeck:fd-execute
 ```
 
-Merge into `~/.fd-plan/<slug>/checkpoint.json`, keeping existing keys and setting:
+Merge into `<fd>/checkpoint.json`, keeping existing keys and setting:
 
 ```json
 {

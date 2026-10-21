@@ -13,11 +13,11 @@ Resume an interrupted FlowDeck session.
 
 ## Steps
 
-1. **Read `~/.fd-plan/<slug>/state.json` (the directory `fd-state path` prints). It is the primary source and holds every field.** If it exists and `version` is `"1"`, rebuild the summary from `current_command`, `current_stage`, `topic`, `blockers`, `status`, `plan_confirmed`, `steps_complete`, `last_action`, `next_action` and `saved_at`.
+1. **Read `<fd>/state.json` (the directory `fd-state path` prints). It is the primary source and holds every field.** If it exists and `version` is `"1"`, rebuild the summary from `current_command`, `current_stage`, `topic`, `blockers`, `status`, `plan_confirmed`, `steps_complete`, `last_action`, `next_action` and `saved_at`.
 
 2. **Fallback for older projects.** If `state.json` is missing, unreadable, or has another `version`, read `checkpoint.json` for `current_command`, `current_stage`, `topic` and `blockers`, and STATE.md for `status`, `plan_confirmed`, `steps_complete`, `last_action` and `next_action`, and say which source you used. If neither exists: `No planning workspace. Run /flowdeck:fd-task to start.`
 
-3. If `~/.fd-plan/<slug>/<topic>/plan.md` exists, show the first 10 lines of its Steps section. show the requirement count: the number of lines that start with `- R-` followed by digits.
+3. If `<fd>/<topic>/plan.md` exists, show the first 10 lines of its Steps section. show the requirement count: the number of lines that start with `- R-` followed by digits.
 
 4. Present:
 

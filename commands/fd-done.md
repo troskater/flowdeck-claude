@@ -3,6 +3,8 @@ description: FlowDeck pipeline stage. Close the task by summarizing built vs req
 argument-hint: [--topic=<slug>]
 ---
 
+`<fd>` is this project's FlowDeck directory, the one `fd-state path` prints (`~/.fd-plan/<project>/`, or `<project>/.fd-plan/` when the storage setting is `project`).
+
 # Done
 
 Close the task: summarize what was built against what was asked, then commit and, if you approve, push.
@@ -15,7 +17,7 @@ Close the task: summarize what was built against what was asked, then commit and
 
 ## Step 0: Pre-flight
 
-1. `~/.fd-plan/<slug>/STATE.md` must exist. If not: `No planning workspace. Run /flowdeck:fd-task first.`
+1. `<fd>/STATE.md` must exist. If not: `No planning workspace. Run /flowdeck:fd-task first.`
 2. Resolve `<topic>` from `--topic`, else from `topic` in STATE.md.
 3. Read STATE.md and record `status`, `plan_confirmed`, `blockers`, `steps_complete`.
 
@@ -32,7 +34,7 @@ Also stop if `blockers` is non-empty, and list every blocker.
 
 ## Step 2: Summarize built vs required
 
-Read the Task section of `~/.fd-plan/<slug>/<topic>/plan.md` and check every requirement and acceptance criterion against what actually landed.
+Read the Task section of `<fd>/<topic>/plan.md` and check every requirement and acceptance criterion against what actually landed.
 
 Collect the changed files with `git status --short` and `git diff --name-only HEAD`. If a branch base is known, also run `git log --oneline --no-merges <base>..HEAD`.
 
@@ -79,7 +81,9 @@ SLOP DETECTED — the diff contains generic artifacts:
 
 Wait for the answer. On [2], stop without committing. **Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Slop`, options `Proceed anyway` and `Abort, I will clean it up`.
 
-## Step 4: Commit message
+## Step 3b: Extra skills
+
+Run `fd-state skills done`. It prints the extra skills the user configured for this stage (`/config`, "Extra skills per stage"), one per line; nothing printed means none, so skip this step. Invoke each one in order with the Skill tool, passing the topic and the path of its `plan.md` as args. Run them after the slop check and before the commit message, so the user sees the findings before committing. Put what each skill reports in a section `Extra skills (advisory)`, one line per finding with the skill name. These findings never block the stage or change its outcome. If a skill is not installed, errors, or is blocked by the edit gate, say so in that section and carry on.## Step 4: Commit message
 
 Propose a Conventional Commits message derived from the plan's Task section:
 
@@ -128,13 +132,13 @@ If `git commit` fails, report the git error verbatim and do not mark the task co
 
 ## Step 7: Update project architecture
 
-Re-read `~/.fd-plan/<slug>/architecture.md` and compare it with what the task changed (from the plan's Affect section and the completed steps). If the task added modules, changed the tech stack, added dependencies, or shifted conventions, update the relevant sections only. Do not rewrite the whole file. Log: `Updated ~/.fd-plan/<slug>/architecture.md with changes from <topic>.`
+Re-read `<fd>/architecture.md` and compare it with what the task changed (from the plan's Affect section and the completed steps). If the task added modules, changed the tech stack, added dependencies, or shifted conventions, update the relevant sections only. Do not rewrite the whole file. Log: `Updated <fd>/architecture.md with changes from <topic>.`
 
 ## Step 8: Close out state
 
 Set STATE.md: `status: complete`, `last_action: <topic> closed via /flowdeck:fd-done`, `next_action: run /flowdeck:fd-task to start the next task`.
 
-Merge into `~/.fd-plan/<slug>/checkpoint.json`:
+Merge into `<fd>/checkpoint.json`:
 
 ```json
 {
@@ -155,7 +159,7 @@ DONE — <topic>
   Changed files:     <N>
   Commit:            <sha> | not committed
   Pushed:            <remote>/<branch> | no
-  State:             ~/.fd-plan/<slug>/STATE.md (status: complete)
+  State:             <fd>/STATE.md (status: complete)
 ────────────────────────────────────────────────────
 Next: /flowdeck:fd-task to start the next task
 ════════════════════════════════════════════════════
