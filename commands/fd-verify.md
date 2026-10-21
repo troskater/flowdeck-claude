@@ -150,12 +150,11 @@ Merge into `~/.fd-plan/<slug>/checkpoint.json`:
 {
   "current_command": "fd-verify",
   "current_stage": "VERIFY",
-  "topic": "<topic>",
-  "saved_at": "<ISO timestamp>"
+  "topic": "<topic>"
 }
 ```
 
-On a passing verdict, set `current_stage: complete`. On a failing verdict, set `current_stage: failed`. Keep `VERIFY` while fixes are still possible, since the gate allows edits in `VERIFY`.
+On a passing verdict, set `current_stage: complete`. On a failing verdict, keep `current_stage: VERIFY`: the gate allows edits only in `EXECUTE` and `VERIFY`, so any other stage would block the fixes, and `fd-done` still refuses because `status` is `not_verified`.
 
 ## Error handling
 
@@ -165,4 +164,4 @@ On a passing verdict, set `current_stage: complete`. On a failing verdict, set `
 
 ## Completion
 
-Report the verdict, per-check status and required fixes. Next step: `/flowdeck:fd-done` on pass, `/flowdeck:fd-execute` to fix.
+Report the verdict, per-check status and required fixes. Next step: `/flowdeck:fd-done` on pass; on fail, fix the code (edits stay open) and re-run `/flowdeck:fd-verify`.

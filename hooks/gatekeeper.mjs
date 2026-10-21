@@ -3,12 +3,12 @@
 // shortcut: reads only checkpoint.json under ~/.fd-plan, not STATE.md. upgrade: share a STATE.md reader from lib/.
 import { readFileSync, existsSync } from "node:fs";
 import { join, resolve, relative, isAbsolute } from "node:path";
-import { homedir } from "node:os";
+import { planRoot as root, planDir } from "../lib/paths.mjs";
 
 const input = JSON.parse(readFileSync(0, "utf8"));
 if (process.env.FLOWDECK_DEV_MODE === "on") process.exit(0);
 
-const planRoot = join(homedir(), ".fd-plan");
+const planRoot = root();
 
 // FlowDeck's own state files stay writable at every stage, or fd-task could not save its artifacts.
 const target = input.tool_input?.file_path;
@@ -17,13 +17,13 @@ if (target) {
   if (rel && !rel.startsWith("..") && !isAbsolute(rel)) process.exit(0);
 }
 
-const slug = (input.cwd ?? process.cwd()).split(/[\\/]/).pop();
+const dir = planDir(input.cwd);
 try {
-  if (JSON.parse(readFileSync(join(planRoot, slug, "gate.json"), "utf8")).enabled === false) process.exit(0);
+  if (JSON.parse(readFileSync(join(dir, "gate.json"), "utf8")).enabled === false) process.exit(0);
 } catch {
   // no gate.json: gate stays on
 }
-const statePath = join(planRoot, slug, "checkpoint.json");
+const statePath = join(dir, "checkpoint.json");
 if (!existsSync(statePath)) process.exit(0);
 
 let cp = {};

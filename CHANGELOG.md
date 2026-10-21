@@ -2,6 +2,19 @@
 
 Every change that reaches users bumps the version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (a test checks they match).
 
+## 0.3.3
+
+Fixed
+- A failed `fd-verify` no longer strands you. It used to set the stage to `failed`, which blocked edits, while `fd-execute` refused to run again. The stage now stays at `VERIFY`, so you can fix the code and re-run `fd-verify`; `fd-done` still refuses until it passes.
+- `fd-state` no longer refuses every write when an older `STATE.md` holds a value it no longer accepts (such as `status: planning`). That value is skipped on import, as intended.
+- The hooks and `fd-state` find the project from the git top level (and `CLAUDE_PROJECT_DIR` in hooks), not from the current folder. Before, a `cd src` in Bash turned the edit gate off and made `fd-state` write a second state folder. A session started in a subfolder of a repo now uses the repo's state folder. New `fd-state path` prints it.
+- The wave workflow no longer crashes on a step with no file list (that step now runs alone), and treats `./src/a.ts` and `src/a.ts` as the same file.
+- Tool guard: `rm -rfv` and `rm -Rf` are now blocked; reading `.env.example`, `.env.sample` and `.env.template` is allowed.
+- `fd-status` and `fd-resume` read `state.json` first; README, DIFFERENCES and the orchestrator describe the current state writer and parallel waves.
+
+Removed
+- `PLAN-v0.1.0.md`, a finished planning note.
+
 ## 0.3.2
 
 Changed

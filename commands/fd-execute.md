@@ -76,8 +76,7 @@ Only now, with guards passed and the guard decision logged, update `~/.fd-plan/<
   "current_command": "fd-execute",
   "current_stage": "EXECUTE",
   "topic": "<topic>",
-  "topic_branch": "fd/<topic> or null",
-  "saved_at": "<ISO timestamp>"
+  "topic_branch": "fd/<topic> or null"
 }
 ```
 
@@ -123,8 +122,7 @@ Then update `checkpoint.json`:
   "current_command": "fd-execute",
   "current_stage": "EXECUTE",
   "topic": "<topic>",
-  "last_wave": <N>,
-  "saved_at": "<ISO timestamp>"
+  "last_wave": <N>
 }
 ```
 

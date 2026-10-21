@@ -3,11 +3,10 @@
 // state.json (written by bin/fd-state) is stamped alongside checkpoint.json when it exists.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { homedir } from "node:os";
+import { planDir } from "../lib/paths.mjs";
 
 const input = JSON.parse(readFileSync(0, "utf8"));
-const slug = (input.cwd ?? process.cwd()).split(/[\\/]/).pop();
-const dir = join(homedir(), ".fd-plan", slug);
+const dir = planDir(input.cwd);
 const path = join(dir, "checkpoint.json");
 if (!existsSync(path)) process.exit(0);
 

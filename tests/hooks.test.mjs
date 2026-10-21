@@ -15,6 +15,7 @@ const planDir = join(home, ".fd-plan", slug);
 
 const env = { ...process.env, HOME: home, USERPROFILE: home };
 delete env.FLOWDECK_DEV_MODE;
+delete env.CLAUDE_PROJECT_DIR;
 
 const hook = (name, payload) =>
   spawnSync("node", [join(root, "hooks", name)], { input: JSON.stringify({ cwd: project, ...payload }), env, encoding: "utf8" });
@@ -66,6 +67,25 @@ test("gate: unreadable checkpoint fails closed", () => {
   assert.equal(gate(code), "deny");
 });
 
+test("gate: a cd into a subfolder does not switch projects", () => {
+  checkpoint("fd-task", "in_progress");
+  const r = spawnSync("node", [join(root, "hooks", "gatekeeper.mjs")], {
+    input: JSON.stringify({ cwd: join(project, "src"), tool_name: "Write", tool_input: { file_path: code } }),
+    env: { ...env, CLAUDE_PROJECT_DIR: project },
+    encoding: "utf8",
+  });
+  assert.match(r.stdout, /"deny"/);
+});
+
+test("fd-state: run from a subfolder of a git repo, writes the repo's state", () => {
+  const repo = mkdtempSync(join(tmpdir(), "fd-repo-"));
+  spawnSync("git", ["init", "-q"], { cwd: repo });
+  mkdirSync(join(repo, "src"));
+  const r = spawnSync("node", [join(root, "bin", "fd-state"), "path"], { cwd: join(repo, "src"), env, encoding: "utf8" });
+  assert.equal(r.stdout.trim(), join(home, ".fd-plan", repo.split(/[\\/]/).pop()));
+  rmSync(repo, { recursive: true, force: true });
+});
+
 test("gate: FLOWDECK_DEV_MODE=on bypasses", () => {
   checkpoint("fd-task", "in_progress");
   const r = spawnSync("node", [join(root, "hooks", "gatekeeper.mjs")], {
@@ -85,6 +105,8 @@ test("tool-guard: inert outside a FlowDeck project, active inside", () => {
   assert.equal(guard("Bash", { command: "rm -rf build" }), "deny");
   assert.equal(guard("Bash", { command: "ls" }), "allow");
   assert.equal(guard("Read", { file_path: join(project, ".env") }), "deny");
+  assert.equal(guard("Read", { file_path: join(project, ".env.local") }), "deny");
+  assert.equal(guard("Read", { file_path: join(project, ".env.example") }), "allow");
   assert.equal(guard("Read", { file_path: join(project, "id.pem") }), "deny");
   assert.equal(guard("Read", { file_path: join(project, "environment.ts") }), "allow");
   assert.equal(guard("Write", { file_path: join(project, "node_modules", "x", "i.js") }), "deny");
@@ -128,6 +150,10 @@ test("tool guard: rm -rf is blocked in command position only", () => {
   mkdirSync(planDir, { recursive: true });
   assert.equal(guard("Bash", { command: "cd x && rm -rf build" }), "deny");
   assert.equal(guard("Bash", { command: "ls; sudo rm -fr build" }), "deny");
+  assert.equal(guard("Bash", { command: "rm -rfv build" }), "deny");
+  assert.equal(guard("Bash", { command: "rm -Rf build" }), "deny");
+  assert.equal(guard("Bash", { command: "rm -r build" }), "allow");
+  assert.equal(guard("Bash", { command: "rm -f build.log" }), "allow");
   assert.equal(guard("Bash", { command: "echo 'rm -rf is blocked'" }), "allow");
   assert.equal(guard("Bash", { command: "git commit -m \"fix rm -rf false positive\"" }), "allow");
   assert.equal(guard("Bash", { command: "grep -rn \"rm -rf\" hooks" }), "allow");
@@ -171,6 +197,17 @@ test("fd-state: first write imports an existing STATE.md and checkpoint.json", (
   assert.equal(st.current_stage, "EXECUTE");
 });
 
+test("fd-state: a legacy value that no longer validates is skipped, not fatal", () => {
+  const dir = join(home, ".fd-plan", "st-d");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "STATE.md"), "status: planning\ntopic: legacy\n");
+  const r = fdState("st-d", "set", "last_action=x");
+  assert.equal(r.status, 0, r.stderr);
+  const st = JSON.parse(fdState("st-d", "get").stdout);
+  assert.equal(st.topic, "legacy");
+  assert.equal(st.status, undefined);
+});
+
 test("autosave: stamps saved_at in state.json too", () => {
   fdState(slug, "set", "current_command=fd-execute", "current_stage=EXECUTE");
   const before = JSON.parse(readFileSync(join(planDir, "state.json"), "utf8")).saved_at;
@@ -180,6 +217,33 @@ test("autosave: stamps saved_at in state.json too", () => {
   hook("autosave.mjs", {});
   assert.notEqual(JSON.parse(readFileSync(join(planDir, "state.json"), "utf8")).saved_at, stale);
   assert.ok(before);
+});
+
+// Runs the workflow script with stub globals; agents just echo their step.
+const runWave = (steps) => {
+  const src = readFileSync(join(root, "workflows", "fd-execute-wave.js"), "utf8").replace("export const meta", "const meta");
+  const run = new (Object.getPrototypeOf(async () => {}).constructor)("args", "phase", "log", "agent", "parallel", src);
+  const parallel = (fns) => Promise.all(fns.map((f) => f()));
+  const agent = async () => ({ files_changed: [], test_result: "pass" });
+  return run({ steps }, () => {}, () => {}, agent, parallel);
+};
+
+test("wave: steps sharing a file run in order, the rest in parallel", async () => {
+  const out = await runWave([
+    { n: 1, files: ["src/a.ts"], brief: "" },
+    { n: 2, files: ["src/b.ts"], brief: "" },
+    { n: 3, files: ["./src/a.ts"], brief: "" },
+  ]);
+  assert.deepEqual(out.batches, [[1, 2], [3]]);
+});
+
+test("wave: a step with no file list runs alone", async () => {
+  const out = await runWave([
+    { n: 1, files: ["a"], brief: "" },
+    { n: 2, brief: "" },
+    { n: 3, files: ["b"], brief: "" },
+  ]);
+  assert.deepEqual(out.batches, [[1], [2], [3]]);
 });
 
 test("version: plugin.json and marketplace.json agree", () => {

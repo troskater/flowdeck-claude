@@ -3,11 +3,12 @@
 // checkpoint.json are rendered from it on every write, so they cannot drift apart.
 //   fd-state set key=value ... [key+=value ...]   validate, merge, write all three files
 //   fd-state get [key]                            print state.json (or one key)
+//   fd-state path                                 print this project's FlowDeck directory
 //   fd-state --help                               valid keys and values
 // Values parse as JSON when they can (true, 3, null, ["a"]), else stay strings. `key+=v` appends to a list.
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from "node:fs";
 import { join, basename } from "node:path";
-import { homedir } from "node:os";
+import { planDir } from "../lib/paths.mjs";
 
 const ENUMS = {
   status: ["in_progress", "executing", "executed", "verified", "not_verified", "complete", "done", "cancelled"],
@@ -26,7 +27,8 @@ const KEYS = [...Object.keys(ENUMS), ...Object.keys(TYPES)];
 const STATE_MD = ["status", "plan_confirmed", "topic", "topic_branch", "last_action", "next_action", "steps_complete", "security_check", "auto_fix", "verified_by", "trivial", "skipped_stages", "skip_reason", "blockers", "accepted_risks"];
 const CHECKPOINT = ["project", "topic", "topic_branch", "current_command", "current_stage", "status", "saved_at", "last_wave", "trivial", "blockers"];
 
-const fail = (msg) => { process.stderr.write(`fd-state: ${msg}\n`); process.exit(1); };
+// throws so load() can skip legacy values that no longer validate; the top-level catch reports and exits 1
+const fail = (msg) => { throw new Error(msg); };
 const parse = (raw) => { try { return JSON.parse(raw); } catch { return raw; } };
 // text keys keep their raw string (a topic named "123" stays text); the rest parse as JSON
 const fromText = (key, raw) => (key in ENUMS || TYPES[key] === "string" || TYPES[key] === "string?" ? (raw === "null" && TYPES[key] === "string?" ? null : raw) : parse(raw));
@@ -52,8 +54,8 @@ function coerce(key, v) {
   return fail(`unknown key ${key}`);
 }
 
-const slug = process.env.FD_SLUG || basename(process.cwd());
-const dir = join(homedir(), ".fd-plan", slug);
+const dir = planDir(process.cwd(), process.env.FD_SLUG || undefined);
+const slug = basename(dir);
 const paths = { state: join(dir, "state.json"), md: join(dir, "STATE.md"), cp: join(dir, "checkpoint.json") };
 
 // First write in a project that predates state.json: import what STATE.md and checkpoint.json hold.
@@ -94,6 +96,7 @@ function save(s) {
 }
 
 const [cmd, ...rest] = process.argv.slice(2);
+try {
 if (cmd === "set") {
   if (!rest.length) fail("set needs key=value pairs");
   const s = load();
@@ -113,7 +116,13 @@ if (cmd === "set") {
 } else if (cmd === "get") {
   const s = load();
   console.log(JSON.stringify(rest[0] ? s[rest[0]] ?? null : s, null, 2));
+} else if (cmd === "path") {
+  console.log(dir);
 } else {
-  console.log(`usage: fd-state set key=value ... | fd-state get [key]\nkeys: ${KEYS.join(", ")}\n${Object.entries(ENUMS).map(([k, v]) => `${k}: ${v.join("|")}`).join("\n")}`);
+  console.log(`usage: fd-state set key=value ... | fd-state get [key] | fd-state path\nkeys: ${KEYS.join(", ")}\n${Object.entries(ENUMS).map(([k, v]) => `${k}: ${v.join("|")}`).join("\n")}`);
   process.exit(cmd === "--help" ? 0 : 1);
+}
+} catch (e) {
+  process.stderr.write(`fd-state: ${e.message}\n`);
+  process.exit(1);
 }

@@ -11,7 +11,7 @@ You drive the FlowDeck pipeline for the user: `fd-task -> fd-review -> fd-execut
 - Write only planning artifacts under `~/.fd-plan/<slug>/` and commit messages yourself. Application code, config and tests are written by `flowdeck:coder`. The one exception is a task the user chose to run as trivial (`CONFIRM SKIP`).
 - Delegate by calling the `Agent` tool with `subagent_type`. Naming an agent in text delegates nothing. A subagent cannot see this conversation: give it the task, paths, constraints, acceptance cases and every decision that bears on its work. It cannot ask the user; if it returns a question, you ask.
 - Check what a subagent returns. Do not accept "tests pass" on its word: run the suite yourself before recording a step complete.
-- Keep `~/.fd-plan/<slug>/STATE.md` and `checkpoint.json` current at each stage. Merge into `checkpoint.json`; never drop fields.
+- Keep the pipeline state current at each stage by running `fd-state set key=value ...`; it renders `state.json`, `STATE.md` and `checkpoint.json` together. Never edit those files by hand.
 - Never set `status: verified` unless `fd-verify` passed. Never commit or push without the user's explicit yes.
 
 | Stage | Agents |

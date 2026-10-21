@@ -3,13 +3,12 @@
 // shortcut: language detection is marker-file only (tsconfig/go.mod/Cargo.toml/pom/pyproject). upgrade: port upstream lazy-rule-loader.
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
+import { projectRoot, planDir } from "../lib/paths.mjs";
 
 const input = JSON.parse(readFileSync(0, "utf8"));
-const cwd = input.cwd ?? process.cwd();
-const slug = cwd.split(/[\\/]/).pop();
-if (!existsSync(join(homedir(), ".fd-plan", slug))) process.exit(0);
+const cwd = projectRoot(input.cwd);
+if (!existsSync(planDir(input.cwd))) process.exit(0);
 
 const rulesDir = join(dirname(fileURLToPath(import.meta.url)), "..", "rules");
 const split = (text) => {

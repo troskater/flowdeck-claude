@@ -1,6 +1,6 @@
 ---
 description: Check that this project has what FlowDeck's built-in review and code-navigation steps need (LSP server, origin/HEAD, test runner). Read-only.
-allowed-tools: Read, Glob, Grep, LSP, Bash(git *)
+allowed-tools: Read, Glob, Grep, LSP, Bash(git *), Bash(fd-state path)
 ---
 
 Check the current project and report. Change nothing, and do not install or run anything beyond the commands named here.
@@ -35,6 +35,6 @@ Run `git rev-parse --is-inside-work-tree`, `git remote -v`, and `git rev-parse -
 Read the manifest and report the test command (`npm test`, `pytest`, `cargo test`, `go test ./...`, or similar), or say none was found.
 
 ## 5. FlowDeck state
-Say whether `~/.fd-plan/<slug>/` exists (slug is this directory's name) and, if it does, the `current_command` and `current_stage` from its `checkpoint.json`.
+Say whether `~/.fd-plan/<slug>/` exists (the directory `fd-state path` prints) and, if it does, the `current_command` and `current_stage` from its `checkpoint.json`.
 
 End with a short list: what is ready, and what to fix first.

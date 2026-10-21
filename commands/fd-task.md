@@ -21,7 +21,7 @@ Codebase mapping runs in the `fd-map` skill, which uses the read-only `flowdeck:
 
 ## Step 1: Auto-init
 
-`<slug>` is the current project directory name. Planning state lives in `~/.fd-plan/<slug>/`.
+`~/.fd-plan/<slug>/` is the directory `fd-state path` prints (named after the git top-level folder, else the session directory), the same one the hooks use. Planning state lives in `~/.fd-plan/<slug>/`.
 
 If `~/.fd-plan/<slug>/` does not exist:
 1. Create it, then write `STATE.md` immediately so an interrupted session can resume:
@@ -201,8 +201,7 @@ Merge into `~/.fd-plan/<slug>/checkpoint.json`. Keep the existing keys and set:
   "project": "<slug>",
   "topic": "<topic>",
   "current_command": "fd-task",
-  "current_stage": "complete",
-  "saved_at": "<ISO timestamp>"
+  "current_stage": "complete"
 }
 ```
 

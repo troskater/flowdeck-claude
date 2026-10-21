@@ -31,9 +31,9 @@ Or load a local checkout for one session: `claude --plugin-dir <path>`. If your 
 
 **You type only the first command.** As in upstream FlowDeck there are two approval gates: you CONFIRM the plan at the end of `fd-task` (before anything is saved), and you CONFIRM at the end of `fd-review` (before any code is written). After that `fd-execute`, `fd-verify` and `fd-done` run on their own. The pipeline stops if a step fails or verification fails, and `fd-done` still asks about the commit message and permission to push. Use `fd-resume` to pick up after stopping. You can also type any stage yourself; each stage checks its own preconditions, so running one out of order is refused.
 
-Questions appear as Claude Code's native picker (recommended option first, "Other" for free text); typing `Y`, `CONFIRM` or a revision works too. Where the picker is unavailable, such as `claude -p`, the same questions are asked in plain text. Claude Code has no task-list tool in the versions checked and plan mode is interactive-only, so FlowDeck uses neither; progress lives in `STATE.md` and the ticks in `plan.md`.
+Questions appear as Claude Code's native picker (recommended option first, "Other" for free text); typing `Y`, `CONFIRM` or a revision works too. Where the picker is unavailable, such as `claude -p`, the same questions are asked in plain text. Progress lives in `state.json` and the ticks in `plan.md`; FlowDeck does not use a task-list tool.
 
-Planning state lives in `~/.fd-plan/<project>/` (`STATE.md`, `checkpoint.json`, and one folder per topic).
+Planning state lives in `~/.fd-plan/<project>/` (`state.json`, with `STATE.md` and `checkpoint.json` rendered from it, plus one folder per topic). `<project>` is the name of the git top-level folder, or of the session directory outside git, so a `cd` into a subfolder still finds it; `fd-state path` prints it.
 
 ## What it uses from Claude Code
 
@@ -53,7 +53,7 @@ Planning state lives in `~/.fd-plan/<project>/` (`STATE.md`, `checkpoint.json`, 
 
 ## The edit gate
 
-While a pipeline is active, a hook blocks `Write`, `Edit` and `MultiEdit` until the stage is `EXECUTE` or `VERIFY`. It does not apply to:
+While a pipeline is active, a hook blocks `Write`, `Edit` and `MultiEdit` until the stage is `EXECUTE` or `VERIFY` (a failed `fd-verify` stays in `VERIFY`, so you can fix and re-run it). It does not apply to:
 
 - projects with no `~/.fd-plan/<project>/checkpoint.json`
 - a finished pipeline (`fd-done` complete) or a cancelled one
@@ -61,7 +61,7 @@ While a pipeline is active, a hook blocks `Write`, `Edit` and `MultiEdit` until 
 
 Run `/flowdeck:fd-gate off` to turn the gate off for the current project (`on` restores it, `status` shows it). `FLOWDECK_DEV_MODE=on` in the environment that launches Claude Code also bypasses it.
 
-A second hook, the tool guard, applies in FlowDeck projects. It blocks reading `.env*`, `*.pem`, `*.key` and `*.secret`, writing under `node_modules`, the destructive `rm` with recursive-force flags, and edits to the Forbidden Paths in `~/.fd-plan/<project>/.codebase/CONSTRAINTS.md`. `/flowdeck:fd-gate off` and `FLOWDECK_TOOL_GUARD_ENABLED=off` disable it. A Stop hook refreshes `saved_at` on an open checkpoint.
+A second hook, the tool guard, applies in FlowDeck projects. It blocks reading `.env*` (but not `.env.example`, `.sample` or `.template`), `*.pem`, `*.key` and `*.secret`, writing under `node_modules`, the destructive `rm` with recursive-force flags, and edits to the Forbidden Paths in `~/.fd-plan/<project>/.codebase/CONSTRAINTS.md`. `/flowdeck:fd-gate off` and `FLOWDECK_TOOL_GUARD_ENABLED=off` disable it. A Stop hook refreshes `saved_at` on an open checkpoint.
 
 ## Rules and skills
 
@@ -79,13 +79,14 @@ Full tables are in [DIFFERENCES.md](DIFFERENCES.md). In short:
 - Review is per wave, not per step, and uses Claude Code's built-in reviews instead of upstream's reviewer and security-auditor prompts.
 - `security-review` sees only committed work and needs `origin/HEAD`.
 - Nothing enforces "test before code" except the instruction in `fd-execute`.
-- State files are written by the model, so their format can drift.
+- The edit gate covers `Write` and `Edit`, not file writes made through Bash.
 
 **Added here**
 - `/flowdeck:fd-gate`, the tool guard and the autosave hook (above), `fd-status --all`, and `fd-doctor`.
 - `fd-verify` asks up front about the security audit and auto-fix, and fixes and re-runs up to twice on failure. Upstream only offered a manual re-run.
 - Subagent delegation and the model ceiling (above).
-- The full test suite runs after every step in `fd-execute`.
+- `fd-state`, one validated writer for the state files (upstream's are written by the model).
+- The full test suite runs after every step in `fd-execute` (after the whole wave when steps run in parallel).
 
 **Ported as upstream:** the trivial-task shortcut (`CONFIRM SKIP` at the end of `fd-task`), lesson capture (`lessons.md`) and Forbidden Paths constraints.
 

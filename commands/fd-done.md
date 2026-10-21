@@ -141,8 +141,7 @@ Merge into `~/.fd-plan/<slug>/checkpoint.json`:
   "current_command": "fd-done",
   "current_stage": "complete",
   "status": "done",
-  "topic": "<topic>",
-  "saved_at": "<ISO timestamp>"
+  "topic": "<topic>"
 }
 ```
 

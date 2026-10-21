@@ -5,7 +5,7 @@ Compared 2026-10-20 against upstream's `src/commands`, `src/hooks`, `src/service
 ## Same
 - Five stages (`fd-task`, `fd-review`, `fd-execute`, `fd-verify`, `fd-done`) plus `fd-checkpoint`, `fd-resume`, `fd-status`.
 - One `plan.md` with Task, Architecture, Affect and Steps sections instead of upstream's four files (0.3.1), research gate, one-question-at-a-time with question and reuse suppression, effort estimate, CEO and eng review lenses, slop check, commit and push questions.
-- State in `~/.fd-plan/<slug>/` (`STATE.md`, `checkpoint.json`).
+- State in `~/.fd-plan/<slug>/` (`STATE.md`, `checkpoint.json`). Here both are rendered from `state.json` by `bin/fd-state`, and `<slug>` is the git top-level folder's name.
 - Approval gates: CONFIRM at the end of `fd-task` and `fd-review`, none after.
 
 ## Replaced with Claude Code built-ins
@@ -23,7 +23,7 @@ Compared 2026-10-20 against upstream's `src/commands`, `src/hooks`, `src/service
 ## Still different
 | Area | Upstream | Here |
 |---|---|---|
-| Parallel waves | Parallel guard creates `fd-<slug>-wave-N` worktrees and merges them | Guard classifies, everything runs sequentially (deferred) |
+| Parallel waves | Parallel guard creates `fd-<slug>-wave-N` worktrees and merges them | `fd-execute-wave` workflow runs steps with disjoint file lists in parallel through `coder`, in the shared checkout (no worktrees); overlapping steps run in order |
 | Trivial-task shortcut | `fd-task -> fd-execute -> fd-done` | Ported: user types `CONFIRM SKIP` at the end of `fd-task`; tests run once; `fd-done` notes the skip |
 | UI design-first gating | Blocks UI-heavy work until `design_approved` | Not ported |
 | `--override`, `--keep-worktree` | Override log surfaced in verify | Not ported |
@@ -35,8 +35,9 @@ Compared 2026-10-20 against upstream's `src/commands`, `src/hooks`, `src/service
 | Model config | Per-agent in `flowdeck.json` | See below |
 
 ## Added in this port (closing gaps)
-- `hooks/tool-guard.mjs`: in a FlowDeck project, blocks reading `.env*`, `*.pem`, `*.key`, `*.secret`, writing under `node_modules`, and `rm -rf`. `/flowdeck:fd-gate off` (writes `~/.fd-plan/<slug>/gate.json`) turns off both this guard and the edit gate per project; `FLOWDECK_TOOL_GUARD_ENABLED=off` and `FLOWDECK_DEV_MODE=on` still work. Upstream applies it to every project; this one only where `~/.fd-plan/<slug>/` exists.
-- `hooks/autosave.mjs` (Stop): stamps `saved_at` on an open pipeline's checkpoint. Stage and step data are still model-written; upstream's idle save had the same limit.
+- `hooks/tool-guard.mjs`: in a FlowDeck project, blocks reading `.env*` (except `.example`, `.sample`, `.template`), `*.pem`, `*.key`, `*.secret`, writing under `node_modules`, and `rm -rf`. `/flowdeck:fd-gate off` (writes `~/.fd-plan/<slug>/gate.json`) turns off both this guard and the edit gate per project; `FLOWDECK_TOOL_GUARD_ENABLED=off` and `FLOWDECK_DEV_MODE=on` still work. Upstream applies it to every project; this one only where `~/.fd-plan/<slug>/` exists.
+- `hooks/autosave.mjs` (Stop): stamps `saved_at` on an open pipeline's `checkpoint.json` and `state.json`. Stage and step data are written by the stage commands through `fd-state`, not saved automatically; upstream's idle save had the same limit.
+- `bin/fd-state`: the single writer for `state.json`, `STATE.md` and `checkpoint.json`; it rejects unknown keys and bad values.
 - `fd-status --all` and the fuller status block.
 - `fd-execute` runs the full test suite after each step and undoes a refactor that breaks it.
 - `fd-verify` asks whether to run the security audit (recorded as `security_check`, flagged again in `fd-done`) and, on NOT VERIFIED, makes up to two automatic fix-and-rerun attempts. Upstream only offered "fix and re-run" as a manual option, and always ran the security scan.

@@ -1,5 +1,5 @@
 ---
-description: Restore from checkpoint.json (falling back to STATE.md), brief you, wait for confirmation, then continue from the recorded command and stage
+description: Restore from state.json (falling back to checkpoint.json and STATE.md), brief you, wait for confirmation, then continue from the recorded command and stage
 argument-hint: [--yes]
 ---
 
@@ -13,21 +13,19 @@ Resume an interrupted FlowDeck session.
 
 ## Steps
 
-1. **Read `~/.fd-plan/<slug>/checkpoint.json`. It is the primary source.** If it exists and `version` is `"1"`, rebuild the summary from `current_command`, `current_stage`, `topic` and `blockers`. If it is missing, unreadable, or has another `version`, fall back to STATE.md and say which source you used.
+1. **Read `~/.fd-plan/<slug>/state.json` (the directory `fd-state path` prints). It is the primary source and holds every field.** If it exists and `version` is `"1"`, rebuild the summary from `current_command`, `current_stage`, `topic`, `blockers`, `status`, `plan_confirmed`, `steps_complete`, `last_action`, `next_action` and `saved_at`.
 
-2. **Fallback to STATE.md.** Read `topic`, `status`, `plan_confirmed`, `steps_complete`, `last_action` and `next_action`. If STATE.md is also missing: `No planning workspace. Run /flowdeck:fd-task to start.`
+2. **Fallback for older projects.** If `state.json` is missing, unreadable, or has another `version`, read `checkpoint.json` for `current_command`, `current_stage`, `topic` and `blockers`, and STATE.md for `status`, `plan_confirmed`, `steps_complete`, `last_action` and `next_action`, and say which source you used. If neither exists: `No planning workspace. Run /flowdeck:fd-task to start.`
 
-3. Read STATE.md for anything the checkpoint does not carry: `last_updated`, `plan_confirmed`, `steps_complete`.
+3. If `~/.fd-plan/<slug>/<topic>/plan.md` exists, show the first 10 lines of its Steps section. show the requirement count: the number of lines that start with `- R-` followed by digits.
 
-4. If `~/.fd-plan/<slug>/<topic>/plan.md` exists, show the first 10 lines of its Steps section. show the requirement count: the number of lines that start with `- R-` followed by digits.
-
-5. Present:
+4. Present:
 
 ```
 ═══════════════════════════════════════════════
 RESUMING SESSION
 ═══════════════════════════════════════════════
-Source: checkpoint.json | STATE.md (fallback)
+Source: state.json | checkpoint.json + STATE.md (fallback)
 Project: <slug>  |  Topic: <topic>
 Command: <current_command> -> stage: <current_stage>
 Status: <status>
@@ -43,11 +41,11 @@ Type CONFIRM to resume from this point.
 ═══════════════════════════════════════════════
 ```
 
-6. Unless `--yes` was passed, **wait** for the user to type CONFIRM. **Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Resume`, options `Resume from here (Recommended)` and `Stop`.
+5. Unless `--yes` was passed, **wait** for the user to type CONFIRM. **Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Resume`, options `Resume from here (Recommended)` and `Stop`.
 
-7. After confirmation:
+6. After confirmation:
    - If `blockers` is non-empty, report them and stop. Do not resume into a blocked state.
-   - Otherwise pick the stage to run. If `current_stage` is `complete`, it is the stage after `current_command` in the pipeline order below (`fd-done` complete: say the pipeline is finished and stop). If `current_stage` is `failed`, it is `fd-execute` after a failed `fd-verify`, else `current_command` again. Anything else re-enters `current_command`. Invoke the Skill tool with skill `flowdeck:<that stage>` (the CONFIRM in step 6 is the approval) and carry on with it. Its own guards skip finished work and steps already in `steps_complete`.
+   - Otherwise pick the stage to run. If `current_stage` is `complete`, it is the stage after `current_command` in the pipeline order below (`fd-done` complete: say the pipeline is finished and stop). Anything else (including a failed `fd-verify`, which stays at `VERIFY`) re-enters `current_command`. Invoke the Skill tool with skill `flowdeck:<that stage>` (the CONFIRM in step 5 is the approval) and carry on with it. Its own guards skip finished work and steps already in `steps_complete`.
    - If the checkpoint was missing, use STATE.md: `plan_confirmed: true` with unfinished steps resumes at `/flowdeck:fd-execute`; no plan starts at `/flowdeck:fd-task`.
    - Say what the next step is before starting it.
 

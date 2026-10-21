@@ -1,22 +1,22 @@
 ---
 description: Show the active FlowDeck pipeline stage, plan, blockers and next command for this project; --all lists every topic
 argument-hint: [--topic=<slug>] [--all]
-allowed-tools: Read, Glob
+allowed-tools: Read, Glob, Bash(fd-state path)
 ---
 
-`<slug>` is the current project directory name. Do not change any file.
+`~/.fd-plan/<slug>/` is the directory `fd-state path` prints (named after the git top-level folder, else the session directory), the same one the hooks use. Do not change any file.
 
 Input: $ARGUMENTS
 
 ## Default: active topic
 
-Read `~/.fd-plan/<slug>/checkpoint.json`, falling back to `~/.fd-plan/<slug>/STATE.md` (say so if you fall back). `<topic>` is `--topic`, else `topic` from STATE.md. If neither file exists: `No planning workspace. Run /flowdeck:fd-task <description> to start.` If `--topic` names a topic with no directory: `Topic '<topic>' not found.` and list the topics that exist.
+Read `~/.fd-plan/<slug>/state.json` (every field), falling back to `checkpoint.json`, then `STATE.md` (say so if you fall back). `<topic>` is `--topic`, else `topic` from the state. If none of the three exists: `No planning workspace. Run /flowdeck:fd-task <description> to start.` If `--topic` names a topic with no directory: `Topic '<topic>' not found.` and list the topics that exist.
 
 Print one block:
 
 ```
 Project: <slug>   Topic: <topic>
-Updated: <saved_at>   Source: checkpoint.json | STATE.md
+Updated: <saved_at>   Source: state.json | checkpoint.json | STATE.md
 Pipeline
   ✅ fd-task     — plan confirmed
   ✅ fd-review   — 0 blocking findings
@@ -33,7 +33,7 @@ Next: <next command>
 
 `✅` is a stage recorded complete in the checkpoint or implied by STATE.md `status`; `🔄` is the stage named by `current_command`; `⬜` is not reached. Check the four sections by looking for their `##` headings in `<topic>/plan.md`; count plan steps from its Steps section and `steps_complete` from STATE.md.
 
-Show each blocker with the command that clears it, e.g. `Affect section missing → /flowdeck:fd-task`, `verification failed → /flowdeck:fd-execute, then /flowdeck:fd-verify`.
+Show each blocker with the command that clears it, e.g. `Affect section missing → /flowdeck:fd-task`, `verification failed → fix the code, then /flowdeck:fd-verify`.
 
 ## `--all`
 

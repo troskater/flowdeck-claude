@@ -4,13 +4,12 @@
 // shortcut: only active where ~/.fd-plan/<slug>/ exists (upstream guards every project).
 import { readFileSync, existsSync } from "node:fs";
 import { join, basename } from "node:path";
-import { homedir } from "node:os";
+import { planDir } from "../lib/paths.mjs";
 
 const input = JSON.parse(readFileSync(0, "utf8"));
 if (process.env.FLOWDECK_TOOL_GUARD_ENABLED === "off" || process.env.FLOWDECK_DEV_MODE === "on") process.exit(0);
 
-const cwd = input.cwd ?? process.cwd();
-const projectDir = join(homedir(), ".fd-plan", cwd.split(/[\\/]/).pop());
+const projectDir = planDir(input.cwd);
 if (!existsSync(projectDir)) process.exit(0);
 try {
   if (JSON.parse(readFileSync(join(projectDir, "gate.json"), "utf8")).enabled === false) process.exit(0);
@@ -24,10 +23,11 @@ let why = null;
 
 if (tool === "Bash") {
   // shortcut: matches rm only in command position, so `bash -c "rm -rf x"` slips through; upgrade if that matters
-  if (/(?:^|[;&|(\n])\s*(?:sudo\s+)?rm\s+-(rf|fr)\b/.test(args.command ?? "")) why = "`rm -rf` is blocked";
+  if (/(?:^|[;&|(\n])\s*(?:sudo\s+)?rm\s+-[a-zA-Z]*(?:[rR][a-zA-Z]*f|f[a-zA-Z]*[rR])/.test(args.command ?? "")) why = "`rm -rf` is blocked";
 } else if (file) {
   const name = basename(file).toLowerCase();
-  if (tool === "Read" && (name === ".env" || name.startsWith(".env.") || /\.(pem|key|secret)$/.test(name))) why = `reading ${name} is blocked (secrets)`;
+  const envFile = (name === ".env" || name.startsWith(".env.")) && !/\.(example|sample|template)$/.test(name);
+  if (tool === "Read" && (envFile || /\.(pem|key|secret)$/.test(name))) why = `reading ${name} is blocked (secrets)`;
   else if (tool !== "Read" && /[\\/]node_modules[\\/]/.test(file)) why = "writing into node_modules is blocked";
   else if (tool !== "Read") {
     // upstream format: a "## Forbidden Paths" list of "- pattern  # note" lines in .codebase/CONSTRAINTS.md

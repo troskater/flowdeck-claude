@@ -21,13 +21,17 @@ const NO_QUESTION = /^(none|n\/a|no)\b/i
 
 phase('Guard')
 const steps = args.steps ?? []
+const norm = s => s.files?.length ? s.files.map(f => f.replace(/\\/g, '/').replace(/^\.\//, '')) : null
+const files = steps.map(norm)
+// a step with no file list may touch anything, so it conflicts with every other step
+const clash = (a, b) => !files[a] || !files[b] || files[a].some(f => files[b].includes(f))
 const batches = []
 const batchOf = []
 steps.forEach((s, i) => {
   // a step goes after the last batch holding an earlier step that shares a file with it
   let idx = 0
   for (let j = 0; j < i; j++) {
-    if (s.files.some(f => steps[j].files.includes(f))) idx = Math.max(idx, batchOf[j] + 1)
+    if (clash(i, j)) idx = Math.max(idx, batchOf[j] + 1)
   }
   batchOf.push(idx)
   ;(batches[idx] ??= []).push(s)
