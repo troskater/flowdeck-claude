@@ -17,7 +17,7 @@ Codebase mapping runs in the `fd-map` skill, which uses the read-only `flowdeck:
 
 **State writes.** Every change to `STATE.md` or `checkpoint.json` in this command goes through `fd-state`, which is on the Bash PATH while the plugin is enabled: `fd-state set key=value ...` (quote values that contain spaces). It validates the keys and values and renders `state.json`, `STATE.md` and `checkpoint.json` together, so do not edit those files by hand. Where a step below says to update STATE.md or merge into the checkpoint, pass the same keys, leaving out `version`, `project` and `saved_at` (it sets them); append to a list with `steps_complete+=3`. If it rejects a value, fix the value and retry. Only if the `fd-state` command is not found, say so and write the files as the step describes.
 
-**Agent names.** Set the `description` of every `Agent` call to the agent's own name (`researcher`, `coder`, `tester`), numbered when one stage runs several of the same kind (`researcher 1`, `researcher 2`). Anything else about the query or step goes in the brief.
+**Agent names.** Set the `description` of every `Agent` call to the agent's own name (`researcher`, `coder`, `tester`), followed by what it is working on in parentheses when one stage runs several of the same kind (`researcher (query 1)`, `researcher (query 2)`). Anything else about the query or step goes in the brief.
 
 ## Step 1: Auto-init
 

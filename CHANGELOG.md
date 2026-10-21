@@ -5,7 +5,7 @@ Every change that reaches users bumps the version in `.claude-plugin/plugin.json
 ## 0.3.2
 
 Changed
-- Review agent labels now read `reviewer (CEO lens)` and `reviewer (Eng lens)` instead of `reviewer 1` and `reviewer 2`, and the CEO and Eng names stay in the stage text.
+- Every agent label is the agent name plus its job in parentheses: `coder (step 2)`, `researcher (query 1)`, `reviewer (CEO lens)`; no more bare numbers.
 
 ## 0.3.1
 

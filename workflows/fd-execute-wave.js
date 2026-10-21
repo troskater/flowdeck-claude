@@ -42,7 +42,7 @@ for (const [i, batch] of batches.entries()) {
   // shortcut: shared-checkout parallelism relies on the declared file lists; a test file two steps both create is not detected, upgrade to worktrees if that bites
   const note = batch.length > 1 ? `\n\n${PARALLEL_NOTE}` : ''
   const out = await parallel(batch.map(s => () =>
-    agent(s.brief + note, { agentType: 'flowdeck:coder', schema: RESULT, label: `coder ${s.n}`, phase: 'Implement' })
+    agent(s.brief + note, { agentType: 'flowdeck:coder', schema: RESULT, label: `coder (step ${s.n})`, phase: 'Implement' })
       .then(r => r && { n: s.n, ...r })))
   for (const [k, r] of out.entries()) results.push(r ?? { n: batch[k].n, failed: true })
   if (out.some(r => !r || (r.question && !NO_QUESTION.test(r.question.trim())))) {

@@ -15,7 +15,7 @@ Run the two lenses (Steps 2 and 3) as two foreground `Agent` calls (`subagent_ty
 
 **State writes.** Every change to `STATE.md` or `checkpoint.json` in this command goes through `fd-state`, which is on the Bash PATH while the plugin is enabled: `fd-state set key=value ...` (quote values that contain spaces). It validates the keys and values and renders `state.json`, `STATE.md` and `checkpoint.json` together, so do not edit those files by hand. Where a step below says to update STATE.md or merge into the checkpoint, pass the same keys, leaving out `version`, `project` and `saved_at` (it sets them); append to a list with `steps_complete+=3`. If it rejects a value, fix the value and retry. Only if the `fd-state` command is not found, say so and write the files as the step describes.
 
-**Agent names.** Set the `description` of every `Agent` call to the agent's own name (`researcher`, `coder`, `tester`), followed by the lens in parentheses so the user can tell the reviews apart: `reviewer (CEO lens)` and `reviewer (Eng lens)`, with the same labels on a re-review. Keep the CEO and Eng names in your own text too. The lens text itself goes in the brief.
+**Agent names.** Set the `description` of every `Agent` call to the agent's own name (`researcher`, `coder`, `tester`), followed by what it is working on in parentheses so the user can tell several of the same kind apart: `reviewer (CEO lens)` and `reviewer (Eng lens)`, with the same labels on a re-review. Keep the CEO and Eng names in your own text too. The lens text itself goes in the brief.
 
 ## Step 1: Load the plan
 
