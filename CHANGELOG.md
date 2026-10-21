@@ -2,6 +2,11 @@
 
 Every change that reaches users bumps the version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (a test checks they match).
 
+## 0.3.2
+
+Changed
+- Review agent labels now read `reviewer (CEO lens)` and `reviewer (Eng lens)` instead of `reviewer 1` and `reviewer 2`, and the CEO and Eng names stay in the stage text.
+
 ## 0.3.1
 
 Changed
