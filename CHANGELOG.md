@@ -2,6 +2,11 @@
 
 Every change that reaches users bumps the version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (a test checks they match).
 
+## 0.2.1
+
+Changed
+- Delegation to the agents is now mandatory in `fd-task`, `fd-review`, `fd-execute` and `fd-verify`. A first test showed the model running the review lenses and the edits itself because the change was small. Only an `Agent` call that errors, or a `CONFIRM SKIP` task in `fd-execute`, allows doing the work inline.
+
 ## 0.2.0
 
 Added

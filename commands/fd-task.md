@@ -55,7 +55,7 @@ Proposed queries:
 
 Do not continue until the user answers. **Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Research`, options `Run these queries (Recommended)`, `Skip research`, `Custom queries`, with the numbered queries in the question text.
 
-- **Y:** send the queries to one foreground `Agent` call with `subagent_type: flowdeck:researcher` (for 4-5 independent queries, split them across parallel calls in the same message), briefed with the task, the queries and the paths of `architecture.md` and the prior `~/.fd-plan/<slug>/*/task.md` files. It follows the `fd-codenav` skill's guidance, reads `CLAUDE.md` / `AGENTS.md` if present, and returns evidence per query. Summarize in 3-5 bullets. If the call fails, run the queries yourself.
+- **Y:** send the queries to one foreground `Agent` call with `subagent_type: flowdeck:researcher` (for 4-5 independent queries, split them across parallel calls in the same message), briefed with the task, the queries and the paths of `architecture.md` and the prior `~/.fd-plan/<slug>/*/task.md` files. It follows the `fd-codenav` skill's guidance, reads `CLAUDE.md` / `AGENTS.md` if present, and returns evidence per query. Summarize in 3-5 bullets. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. Then run the queries yourself.
 - **N:** log "Research skipped by user." and add `Note: created without codebase research — may need revision.` under `## Constraints` in task.md.
 - **C:** ask for the queries one per line, use them exactly as given, then run them as in Y.
 
@@ -78,7 +78,7 @@ Cover, in order, skipping what research already settled: scope (and what is out 
 
 Draft all four before showing anything. Every claim must trace to Step 2 evidence or a Step 3 answer. Do not guess.
 
-Write `task.md` yourself, since it holds the user's answers. Then call `Agent` with `subagent_type: flowdeck:architect`, briefed with `task.md`, the research bullets, the project `architecture.md` and the `architecture.md` and `affect.md` templates below; it returns both drafts. Then call `Agent` with `subagent_type: flowdeck:planner`, briefed with all three drafts and the `plan.md` template; it returns the plan and the effort estimate. Review what they return against the rules below, fix mismatches, and show all four. If a call fails, draft that part yourself.
+Write `task.md` yourself, since it holds the user's answers. Then call `Agent` with `subagent_type: flowdeck:architect`, briefed with `task.md`, the research bullets, the project `architecture.md` and the `architecture.md` and `affect.md` templates below; it returns both drafts. Then call `Agent` with `subagent_type: flowdeck:planner`, briefed with all three drafts and the `plan.md` template; it returns the plan and the effort estimate. Review what they return against the rules below, fix mismatches, and show all four. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. Then draft that part yourself.
 
 **`task.md`**
 ```md

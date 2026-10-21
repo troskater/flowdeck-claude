@@ -44,7 +44,7 @@ Wait for the answer, then record `security_check: on|skipped` and `auto_fix: on|
 
 Run Steps 1-3 in one foreground `Agent` call with `subagent_type: flowdeck:tester` so test logs stay out of this conversation. It returns only: pass/fail per check, the failing test names with the first lines of each error, coverage per affected file, and dependents `affect.md` missed. You keep Step 4, the report and the verdict.
 
-Omit `model` on every delegate here; they inherit your session model. The tester cannot see this conversation, so brief it with the topic, the paths of `affect.md` and the stage rules, and the Step 1-3 text. It has no edit tools. If it cannot run the suite (no runner), it says so and you report that; never pass by default.
+Omit `model` on every delegate here; they inherit your session model. The tester cannot see this conversation, so brief it with the topic, the paths of `affect.md` and the stage rules, and the Step 1-3 text. It has no edit tools. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. If it cannot run the suite (no runner), it says so and you report that; never pass by default.
 
 ## Step 1: Tests
 
