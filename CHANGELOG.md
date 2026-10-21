@@ -2,6 +2,23 @@
 
 Every change that reaches users bumps the version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (a test checks they match).
 
+## 0.3.1
+
+Changed
+- One plan file. `fd-task` now saves a single `plan.md` with four sections (Task, Architecture, Affect, Steps) instead of `task.md`, `architecture.md`, `affect.md` and `plan.md`; the project-level `architecture.md` is unchanged. `fd-review`, `fd-execute`, `fd-verify`, `fd-done`, `fd-status`, `fd-resume`, `fd-checkpoint` and the agents read the sections. The architect drafts Architecture and Affect, the planner drafts Steps and Parallel Safety. Topics saved in the old four-file layout are not supported.
+
+## 0.3.0
+
+Added
+- `workflows/fd-execute-wave.js`: `fd-execute` hands a wave of two or more steps to this workflow. It batches the steps by file overlap, runs disjoint steps in parallel through `flowdeck:coder` in the same checkout, and runs overlapping steps in order. You run the full suite after it returns. No separate git worktrees (see README).
+- `bin/fd-state`: one validated writer for pipeline state. `state.json` is the source of truth; `STATE.md` and `checkpoint.json` are rendered from it on every write, so they cannot drift. It rejects unknown keys and bad values, and imports an existing `STATE.md` and `checkpoint.json` on the first write. The stage commands write state through it; the hooks still read `checkpoint.json`. The Stop hook stamps `saved_at` in `state.json` too.
+- `fd-task` runs steps 2-4 (research, questions, drafts) in plan mode when the tool is available; approving the plan with `ExitPlanMode` is the CONFIRM, and the artifacts are written right after. Without the tool (non-interactive runs) or if the user declines, it behaves as before.
+- Agent calls are labelled with the agent's name (`researcher`, `reviewer 1`, `reviewer 2`, `coder 3`).
+- Opt-in output style `FlowDeck` (`/output-style`): AskUserQuestion at every decision, delegate to the flowdeck agents.
+
+Fixed
+- Tool guard: the recursive-force delete is blocked only in command position, so an echo, a commit message or a grep for the text no longer trips it. A delete wrapped in `bash -c "..."` is not caught.
+
 ## 0.2.1
 
 Changed

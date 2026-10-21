@@ -1,5 +1,5 @@
 ---
-description: Show the active FlowDeck pipeline stage, artifacts, blockers and next command for this project; --all lists every topic
+description: Show the active FlowDeck pipeline stage, plan, blockers and next command for this project; --all lists every topic
 argument-hint: [--topic=<slug>] [--all]
 allowed-tools: Read, Glob
 ---
@@ -18,22 +18,22 @@ Print one block:
 Project: <slug>   Topic: <topic>
 Updated: <saved_at>   Source: checkpoint.json | STATE.md
 Pipeline
-  ✅ fd-task     — artifacts confirmed
+  ✅ fd-task     — plan confirmed
   ✅ fd-review   — 0 blocking findings
   🔄 fd-execute  — wave-2  ← current
   ⬜ fd-verify
   ⬜ fd-done
-Artifacts   task.md ✅  architecture.md ✅  affect.md ✅  plan.md ✅
-Plan        <X> steps (<Y> complete)     Risk  <low|medium|high> (from affect.md)
+Plan file   plan.md ✅  (Task ✅  Architecture ✅  Affect ✅  Steps ✅)
+Plan        <X> steps (<Y> complete)     Risk  <low|medium|high> (from the Affect section)
 Branch      <topic_branch or none>
 Edit gate   open | closed (it opens only when current_stage is EXECUTE or VERIFY)
 Blockers    <list, or none>
 Next: <next command>
 ```
 
-`✅` is a stage recorded complete in the checkpoint or implied by STATE.md `status`; `🔄` is the stage named by `current_command`; `⬜` is not reached. Check the four artifacts by looking for the files under `<topic>/`; count plan steps from `plan.md` and `steps_complete` from STATE.md.
+`✅` is a stage recorded complete in the checkpoint or implied by STATE.md `status`; `🔄` is the stage named by `current_command`; `⬜` is not reached. Check the four sections by looking for their `##` headings in `<topic>/plan.md`; count plan steps from its Steps section and `steps_complete` from STATE.md.
 
-Show each blocker with the command that clears it, e.g. `affect.md missing → /flowdeck:fd-task`, `verification failed → /flowdeck:fd-execute, then /flowdeck:fd-verify`.
+Show each blocker with the command that clears it, e.g. `Affect section missing → /flowdeck:fd-task`, `verification failed → /flowdeck:fd-execute, then /flowdeck:fd-verify`.
 
 ## `--all`
 

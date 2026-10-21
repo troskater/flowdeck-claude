@@ -1,5 +1,5 @@
 ---
-description: FlowDeck pipeline stage. Verify the implementation by running tests, checking regression on affect.md files, then review and security scan; blocks /flowdeck:fd-done on failure. Run only when continuing the pipeline after fd-execute, or when the user names /flowdeck:fd-verify.
+description: FlowDeck pipeline stage. Verify the implementation by running tests, checking regression on the plan's affected files, then review and security scan; blocks /flowdeck:fd-done on failure. Run only when continuing the pipeline after fd-execute, or when the user names /flowdeck:fd-verify.
 argument-hint: [--topic=<slug>]
 ---
 
@@ -12,6 +12,10 @@ Run the verification pipeline for the active topic. `/flowdeck:fd-done` will not
 **Asking.** Every decision in this command is asked with the `AskUserQuestion` tool, and the text layouts shown are only the fallback for when the tool is unavailable (non-interactive runs) or denied. If `AskUserQuestion` is not in your tool list but `ToolSearch` is, load it first with `ToolSearch` query `select:AskUserQuestion`. Use 2-4 short options, your recommendation first and labelled `(Recommended)`; free text arrives as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid.
 
 Step 4 uses Claude Code's built-in `code-review` and `security-review` skills. This command never runs a substitute of its own.
+
+**State writes.** Every change to `STATE.md` or `checkpoint.json` in this command goes through `fd-state`, which is on the Bash PATH while the plugin is enabled: `fd-state set key=value ...` (quote values that contain spaces). It validates the keys and values and renders `state.json`, `STATE.md` and `checkpoint.json` together, so do not edit those files by hand. Where a step below says to update STATE.md or merge into the checkpoint, pass the same keys, leaving out `version`, `project` and `saved_at` (it sets them); append to a list with `steps_complete+=3`. If it rejects a value, fix the value and retry. Only if the `fd-state` command is not found, say so and write the files as the step describes.
+
+**Agent names.** Set the `description` of every `Agent` call to the agent's own name (`researcher`, `coder`, `tester`), numbered when one stage runs several of the same kind (`coder 1`, `coder 2`). Do not invent labels such as "CEO lens"; anything about the lens or step goes in the brief.
 
 ## Pre-flight
 
@@ -42,9 +46,9 @@ Wait for the answer, then record `security_check: on|skipped` and `auto_fix: on|
 
 ## Delegation
 
-Run Steps 1-3 in one foreground `Agent` call with `subagent_type: flowdeck:tester` so test logs stay out of this conversation. It returns only: pass/fail per check, the failing test names with the first lines of each error, coverage per affected file, and dependents `affect.md` missed. You keep Step 4, the report and the verdict.
+Run Steps 1-3 in one foreground `Agent` call with `subagent_type: flowdeck:tester` so test logs stay out of this conversation. It returns only: pass/fail per check, the failing test names with the first lines of each error, coverage per affected file, and dependents the Affect section missed. You keep Step 4, the report and the verdict.
 
-Omit `model` on every delegate here; they inherit your session model. The tester cannot see this conversation, so brief it with the topic, the paths of `affect.md` and the stage rules, and the Step 1-3 text. It has no edit tools. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. If it cannot run the suite (no runner), it says so and you report that; never pass by default.
+Omit `model` on every delegate here; they inherit your session model. The tester cannot see this conversation, so brief it with the topic, the path of `plan.md` (its Affect section) and the stage rules, and the Step 1-3 text. It has no edit tools. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. If it cannot run the suite (no runner), it says so and you report that; never pass by default.
 
 ## Step 1: Tests
 
@@ -65,13 +69,13 @@ Only for web projects (a frontend framework in the manifest, or `public/index.ht
 
 ## Step 3: Regression scope
 
-Read `~/.fd-plan/<slug>/<topic>/affect.md` and take the Affected Files list as the regression scope.
+Read the Affect section of `~/.fd-plan/<slug>/<topic>/plan.md` and take its Affected Files list as the regression scope.
 
 For each affected file, confirm it has test coverage. An uncovered changed file is a HIGH finding.
 
-Find dependents the plan missed by following the blast-radius procedure in the `fd-codenav` skill, and check that the files that reference each affected file have passing tests. Log any dependent that `affect.md` did not list as a planning gap. If only Grep was available, say the check is text-based and does not catch dynamic imports.
+Find dependents the plan missed by following the blast-radius procedure in the `fd-codenav` skill, and check that the files that reference each affected file have passing tests. Log any dependent that the plan's Affect section did not list as a planning gap. If only Grep was available, say the check is text-based and does not catch dynamic imports.
 
-If `affect.md` is missing, skip this step, record that the regression scope is unknown, and mark the verdict NOT VERIFIED.
+If the Affect section is missing, skip this step, record that the regression scope is unknown, and mark the verdict NOT VERIFIED.
 
 ## Step 4: Review and scan
 
@@ -123,7 +127,7 @@ Verdict: VERIFIED | VERIFIED (security skipped) | NOT VERIFIED
 
 Only when `auto_fix` is `on` (otherwise go straight to the options below). The user was told at the start that code may change, and the gate is open in `VERIFY`, so fix the problems yourself rather than asking. Upstream only offers this as a manual option; the automatic loop is a deliberate addition.
 
-Fix automatically: failing tests, confirmed review bugs and CRITICAL/HIGH findings, security Critical/High findings, and affected files with no test (write the test). Do not fix automatically, and stop the loop: no test runner, security NOT RUN, missing `affect.md`, or a fix that needs a change outside `plan.md`'s scope or a new requirement.
+Fix automatically: failing tests, confirmed review bugs and CRITICAL/HIGH findings, security Critical/High findings, and affected files with no test (write the test). Do not fix automatically, and stop the loop: no test runner, security NOT RUN, a missing Affect section, or a fix that needs a change outside `plan.md`'s scope or a new requirement.
 
 Per attempt:
 1. Fix each blocker at its root cause, test first for a bug. If the cause is not evident from the failing output, first send it to one foreground `Agent` with `subagent_type: flowdeck:debug-specialist` (read-only; it returns cause, smallest fix and the regression test). Then delegate the fix to one foreground `Agent` with `subagent_type: flowdeck:coder`, giving it the failing output, the diagnosis, the files involved and the stage rules, and tell it not to commit or push; you review its diff summary before committing.

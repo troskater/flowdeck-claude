@@ -19,7 +19,7 @@ Resume an interrupted FlowDeck session.
 
 3. Read STATE.md for anything the checkpoint does not carry: `last_updated`, `plan_confirmed`, `steps_complete`.
 
-4. If `~/.fd-plan/<slug>/<topic>/plan.md` exists, show its first 10 lines. If `task.md` exists, show the requirement count: the number of lines that start with `- R-` followed by digits.
+4. If `~/.fd-plan/<slug>/<topic>/plan.md` exists, show the first 10 lines of its Steps section. show the requirement count: the number of lines that start with `- R-` followed by digits.
 
 5. Present:
 
@@ -33,11 +33,11 @@ Command: <current_command> -> stage: <current_stage>
 Status: <status>
 Last updated: <timestamp>
 Plan confirmed: <yes/no>
-Requirements: <X> from task.md
+Requirements: <X> from plan.md
 Blockers: <list, or "none">
 
 Plan preview:
-<first 10 lines of plan.md>
+<first 10 lines of the Steps section of plan.md>
 ───────────────────────────────────────────────
 Type CONFIRM to resume from this point.
 ═══════════════════════════════════════════════

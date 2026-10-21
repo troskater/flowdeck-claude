@@ -4,7 +4,7 @@ Compared 2026-10-20 against upstream's `src/commands`, `src/hooks`, `src/service
 
 ## Same
 - Five stages (`fd-task`, `fd-review`, `fd-execute`, `fd-verify`, `fd-done`) plus `fd-checkpoint`, `fd-resume`, `fd-status`.
-- Four artifacts, research gate, one-question-at-a-time with question and reuse suppression, effort estimate, CEO and eng review lenses, slop check, commit and push questions.
+- One `plan.md` with Task, Architecture, Affect and Steps sections instead of upstream's four files (0.3.1), research gate, one-question-at-a-time with question and reuse suppression, effort estimate, CEO and eng review lenses, slop check, commit and push questions.
 - State in `~/.fd-plan/<slug>/` (`STATE.md`, `checkpoint.json`).
 - Approval gates: CONFIRM at the end of `fd-task` and `fd-review`, none after.
 

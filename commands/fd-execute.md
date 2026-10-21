@@ -1,5 +1,5 @@
 ---
-description: FlowDeck pipeline stage. Implement plan.md step by step with a TDD cycle, wave by wave, checkpointing after each wave. Run only when continuing the pipeline after fd-review, or when the user names /flowdeck:fd-execute.
+description: FlowDeck pipeline stage. Implement the Steps in plan.md step by step with a TDD cycle, wave by wave, checkpointing after each wave. Run only when continuing the pipeline after fd-review, or when the user names /flowdeck:fd-execute.
 argument-hint: [--topic=<slug>]
 ---
 
@@ -13,14 +13,18 @@ Implement the confirmed plan. This is the only stage that opens the code-edit ga
 
 After each wave this command calls Claude Code's built-in `code-review` skill.
 
-Not ported in this version: parallel worktree waves and the `--override` and `--keep-worktree` flags. Every step runs sequentially in the main checkout.
+Not ported in this version: separate git worktrees per parallel step, and the `--override` and `--keep-worktree` flags. Steps the parallel guard clears run in parallel in the main checkout (Step 2); everything else runs in order.
+
+**State writes.** Every change to `STATE.md` or `checkpoint.json` in this command goes through `fd-state`, which is on the Bash PATH while the plugin is enabled: `fd-state set key=value ...` (quote values that contain spaces). It validates the keys and values and renders `state.json`, `STATE.md` and `checkpoint.json` together, so do not edit those files by hand. Where a step below says to update STATE.md or merge into the checkpoint, pass the same keys, leaving out `version`, `project` and `saved_at` (it sets them); append to a list with `steps_complete+=3`. If it rejects a value, fix the value and retry. Only if the `fd-state` command is not found, say so and write the files as the step describes.
+
+**Agent names.** Set the `description` of every `Agent` call to the agent's own name (`researcher`, `coder`, `tester`), numbered when one stage runs several of the same kind (`coder 1`, `coder 2` by step number). Do not invent labels such as "CEO lens"; anything about the lens or step goes in the brief.
 
 ## Delegation
 
 You route; `flowdeck:coder` writes the code. Run each step's TDD cycle (Step 4) in one foreground `Agent` call with `subagent_type: flowdeck:coder`, one step at a time. This keeps test output and file reads out of this conversation and means source, config and test files are only written by the coder. The only exception is a task the user chose to skip review for (`trivial: true` in `checkpoint.json`, from `CONFIRM SKIP`). Without that flag, never edit source, config or test files yourself with Write, Edit or a shell command such as `sed`, however small the step. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so.
 
 - **Model:** omit `model`. The agent inherits your session model.
-- **Brief:** the subagent cannot see this conversation. Give it the step text, its acceptance cases from `task.md`, the files from `plan.md`/`affect.md`, the paths of the stage rules, the Step 4 cycle, every decision that bears on the step (the Constraints and Out of Scope in `task.md`, the Approach in `architecture.md`, review outcomes, and anything the user decided or changed during this stage), and this instruction: never push, never commit, never touch `~/.fd-plan/`, and if the step's behavior is unclear return the question instead of guessing.
+- **Brief:** the subagent cannot see this conversation. Give it the step text, its acceptance cases from the plan's Task section, its files from the Steps and Affect sections, the paths of the stage rules, the Step 4 cycle, every decision that bears on the step (the Constraints and Out of Scope in the plan's Task section, its Approach, review outcomes, and anything the user decided or changed during this stage), and this instruction: never push, never commit, never touch `~/.fd-plan/`, and if the step's behavior is unclear return the question instead of guessing.
 - **Result:** ask for files changed, test command and result, and any open question. Do not accept "tests pass" on its word: run the full suite yourself before recording the step complete. If it returns a question, ask the user.
 - **You keep** the guards, the topic branch, the wave commit and review, and all STATE.md and checkpoint updates.
 
@@ -31,7 +35,7 @@ Resolve `<topic>` from `--topic`, else from `topic` in `~/.fd-plan/<slug>/STATE.
 Stop with the matching message if any guard fails:
 
 - `~/.fd-plan/<slug>/STATE.md` missing → `No planning workspace. Run /flowdeck:fd-task first.`
-- `task.md`, `architecture.md`, `affect.md` or `plan.md` missing under `<topic>/` → `Error: <file> not found for topic "<topic>". Run /flowdeck:fd-task first.`
+- `plan.md` missing under `<topic>/` → `Error: plan.md not found for topic "<topic>". Run /flowdeck:fd-task first.`
 - `plan_confirmed` is not `true` in STATE.md → `Plan not confirmed. Run /flowdeck:fd-task first.`
 - `checkpoint.json` does not show `current_command: fd-review` with `current_stage: complete` → `Review has not passed. Run /flowdeck:fd-review first.` Exception: `trivial: true` in `checkpoint.json` with `current_command: fd-task` and `current_stage: complete` (the user chose `CONFIRM SKIP`); log `Review skipped (trivial): <skip_reason>` and continue.
 
@@ -39,14 +43,17 @@ Do not skip these guards. There is no override.
 
 ## Step 2: Parallel guard
 
-Build the file list per task from `affect.md`. For each pair of tasks in the same wave, check whether their file lists intersect.
+Build the file list per step from the plan's Affect and Steps sections. For each pair of tasks in the same wave, check whether their file lists intersect.
 
-Worktrees are not available here, so every task runs sequentially. Log the decision before any code is written:
+Two steps of a wave whose file lists do not intersect may run in parallel; any pair that shares a file runs in order. Worktrees are not used, so the check is only as good as the file lists in `plan.md`. If a step's list is empty or looks incomplete, treat it as sequential. Log the decision before any code is written:
 
 ```
-Parallel guard: 0 parallel, <N> sequential (worktrees not ported)
-  sequential: <Task A>, <Task B>, ...
+Parallel guard: <X> parallel, <Y> sequential
+  parallel:   Step A, Step B
+  sequential: Step C (shares <file> with Step A)
 ```
+
+The `fd-execute-wave` workflow (Step 4) recomputes the same grouping from the file lists you pass it, so the two must agree.
 
 ## Step 2b: Topic branch
 
@@ -80,7 +87,11 @@ Update `STATE.md`: `status: executing`, `last_action: Execution started`.
 
 Before the first step, read the stage rules listed in the "FlowDeck rules" section of the session context (testing, coding style, security, git workflow, and the language patterns for this project). If that section is missing, the session started before FlowDeck was initialized here: read `rules/common/` and the matching language file from the plugin directory instead.
 
-Work through `plan.md` wave by wave, and within a wave one step at a time, in the order the plan gives. Skip any step already listed as complete in STATE.md.
+Work through the Steps in `plan.md` wave by wave, in the order the plan gives. Skip any step already listed as complete in STATE.md.
+
+**A wave with two or more steps left** goes to Claude Code's `Workflow` tool, which this command authorizes: call it with name `flowdeck:fd-execute-wave` and `args` `{"wave": <N>, "steps": [{"n": <step number>, "files": [<paths from plan.md>], "brief": "<the full coder brief from Delegation, for that step>"}, ...]}`. The workflow groups the steps by file overlap, runs each group's steps in parallel through `flowdeck:coder` and the groups in order, and returns per-step results. The workflow tells parallel coders to run only their own tests; you run the full suite after it returns, then do Step 6 of the cycle (Record) for every step in the result. If the result carries a `question` or a failed step, stop the wave and ask or report. If the `Workflow` tool is unavailable or errors, run the wave's steps one at a time as below and say so.
+
+**A wave with one step left** is a single `flowdeck:coder` call as below.
 
 For each step:
 

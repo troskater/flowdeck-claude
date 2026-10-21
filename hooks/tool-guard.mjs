@@ -23,7 +23,8 @@ const file = args.file_path ?? args.path;
 let why = null;
 
 if (tool === "Bash") {
-  if (/\brm\s+-(rf|fr)\b/.test(args.command ?? "")) why = "`rm -rf` is blocked";
+  // shortcut: matches rm only in command position, so `bash -c "rm -rf x"` slips through; upgrade if that matters
+  if (/(?:^|[;&|(\n])\s*(?:sudo\s+)?rm\s+-(rf|fr)\b/.test(args.command ?? "")) why = "`rm -rf` is blocked";
 } else if (file) {
   const name = basename(file).toLowerCase();
   if (tool === "Read" && (name === ".env" || name.startsWith(".env.") || /\.(pem|key|secret)$/.test(name))) why = `reading ${name} is blocked (secrets)`;

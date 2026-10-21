@@ -1,0 +1,119 @@
+#!/usr/bin/env node
+// Single writer for FlowDeck pipeline state. state.json is the source of truth; STATE.md and
+// checkpoint.json are rendered from it on every write, so they cannot drift apart.
+//   fd-state set key=value ... [key+=value ...]   validate, merge, write all three files
+//   fd-state get [key]                            print state.json (or one key)
+//   fd-state --help                               valid keys and values
+// Values parse as JSON when they can (true, 3, null, ["a"]), else stay strings. `key+=v` appends to a list.
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from "node:fs";
+import { join, basename } from "node:path";
+import { homedir } from "node:os";
+
+const ENUMS = {
+  status: ["in_progress", "executing", "executed", "verified", "not_verified", "complete", "done", "cancelled"],
+  current_command: ["fd-task", "fd-review", "fd-execute", "fd-verify", "fd-done", "fd-checkpoint"],
+  current_stage: ["in_progress", "INIT", "EXECUTE", "VERIFY", "complete", "failed", "cancelled"],
+  security_check: ["on", "skipped"],
+  auto_fix: ["on", "off"],
+};
+const TYPES = {
+  project: "string", topic: "string", last_action: "string", next_action: "string", skip_reason: "string",
+  verified_by: "string", skipped_stages: "string", topic_branch: "string?",
+  plan_confirmed: "boolean", trivial: "boolean", last_wave: "int",
+  steps_complete: "int[]", blockers: "string[]", accepted_risks: "string[]",
+};
+const KEYS = [...Object.keys(ENUMS), ...Object.keys(TYPES)];
+const STATE_MD = ["status", "plan_confirmed", "topic", "topic_branch", "last_action", "next_action", "steps_complete", "security_check", "auto_fix", "verified_by", "trivial", "skipped_stages", "skip_reason", "blockers", "accepted_risks"];
+const CHECKPOINT = ["project", "topic", "topic_branch", "current_command", "current_stage", "status", "saved_at", "last_wave", "trivial", "blockers"];
+
+const fail = (msg) => { process.stderr.write(`fd-state: ${msg}\n`); process.exit(1); };
+const parse = (raw) => { try { return JSON.parse(raw); } catch { return raw; } };
+// text keys keep their raw string (a topic named "123" stays text); the rest parse as JSON
+const fromText = (key, raw) => (key in ENUMS || TYPES[key] === "string" || TYPES[key] === "string?" ? (raw === "null" && TYPES[key] === "string?" ? null : raw) : parse(raw));
+
+function coerce(key, v) {
+  if (key in ENUMS) {
+    if (!ENUMS[key].includes(v)) fail(`${key} must be one of ${ENUMS[key].join(", ")} (got ${JSON.stringify(v)})`);
+    return v;
+  }
+  const t = TYPES[key];
+  if (t === "string?" && v === null) return v;
+  if (t === "string" || t === "string?") return typeof v === "string" ? v : fail(`${key} must be a string`);
+  if (t === "boolean") return typeof v === "boolean" ? v : fail(`${key} must be true or false`);
+  if (t === "int") return Number.isInteger(v) && v >= 0 ? v : fail(`${key} must be a whole number`);
+  if (t === "int[]") {
+    const a = typeof v === "number" ? [v] : typeof v === "string" ? v.split(",").map((x) => x.trim()).filter(Boolean).map(Number) : v;
+    return Array.isArray(a) && a.every((n) => Number.isInteger(n) && n >= 0) ? a : fail(`${key} must be a list of step numbers`);
+  }
+  if (t === "string[]") {
+    const a = typeof v === "string" ? (v === "" ? [] : [v]) : v;
+    return Array.isArray(a) && a.every((s) => typeof s === "string") ? a : fail(`${key} must be a list of strings`);
+  }
+  return fail(`unknown key ${key}`);
+}
+
+const slug = process.env.FD_SLUG || basename(process.cwd());
+const dir = join(homedir(), ".fd-plan", slug);
+const paths = { state: join(dir, "state.json"), md: join(dir, "STATE.md"), cp: join(dir, "checkpoint.json") };
+
+// First write in a project that predates state.json: import what STATE.md and checkpoint.json hold.
+function load() {
+  if (existsSync(paths.state)) {
+    try { return JSON.parse(readFileSync(paths.state, "utf8")); } catch { fail(`${paths.state} is not valid JSON; fix or delete it`); }
+  }
+  const s = {};
+  const put = (k, v) => { if (KEYS.includes(k)) try { s[k] = coerce(k, v); } catch { /* skip legacy values that no longer validate */ } };
+  if (existsSync(paths.md)) {
+    for (const line of readFileSync(paths.md, "utf8").split(/\r?\n/)) {
+      const m = line.match(/^([a-z_]+):\s*(.*)$/);
+      if (m && KEYS.includes(m[1])) put(m[1], fromText(m[1], m[2]));
+    }
+  }
+  if (existsSync(paths.cp)) {
+    try { for (const [k, v] of Object.entries(JSON.parse(readFileSync(paths.cp, "utf8")))) put(k, v); } catch { /* unreadable legacy checkpoint */ }
+  }
+  return s;
+}
+
+function atomic(path, text) {
+  writeFileSync(path + ".tmp", text);
+  renameSync(path + ".tmp", path);
+}
+
+function save(s) {
+  s.version = "1";
+  s.project = slug;
+  s.saved_at = new Date().toISOString();
+  mkdirSync(dir, { recursive: true });
+  const show = (v) => (Array.isArray(v) ? v.join(",") : v === null ? "null" : String(v));
+  const md = STATE_MD.filter((k) => k in s).map((k) => `${k}: ${show(s[k])}`).join("\n") + "\n";
+  const cp = Object.fromEntries([["version", "1"], ...CHECKPOINT.filter((k) => k in s).map((k) => [k, s[k]])]);
+  atomic(paths.state, JSON.stringify(s, null, 2));
+  atomic(paths.md, md);
+  atomic(paths.cp, JSON.stringify(cp, null, 2));
+}
+
+const [cmd, ...rest] = process.argv.slice(2);
+if (cmd === "set") {
+  if (!rest.length) fail("set needs key=value pairs");
+  const s = load();
+  for (const arg of rest) {
+    const m = arg.match(/^([a-z_]+)(\+?=)([\s\S]*)$/);
+    if (!m) fail(`bad argument ${JSON.stringify(arg)}; use key=value or key+=value`);
+    const [, key, op, raw] = m;
+    if (key === "version" || key === "saved_at" || key === "project") fail(`${key} is managed by fd-state`);
+    if (!KEYS.includes(key)) fail(`unknown key ${key}; valid keys: ${KEYS.join(", ")}`);
+    const v = coerce(key, fromText(key, raw));
+    if (op === "+=") {
+      if (!TYPES[key]?.endsWith("[]")) fail(`${key} is not a list; use ${key}=value`);
+      s[key] = [...new Set([...(s[key] ?? []), ...v])];
+    } else s[key] = v;
+  }
+  save(s);
+} else if (cmd === "get") {
+  const s = load();
+  console.log(JSON.stringify(rest[0] ? s[rest[0]] ?? null : s, null, 2));
+} else {
+  console.log(`usage: fd-state set key=value ... | fd-state get [key]\nkeys: ${KEYS.join(", ")}\n${Object.entries(ENUMS).map(([k, v]) => `${k}: ${v.join("|")}`).join("\n")}`);
+  process.exit(cmd === "--help" ? 0 : 1);
+}

@@ -124,6 +124,64 @@ test("fd-gate: gate.json enabled=false turns off the gate and the tool guard", (
   assert.equal(guard("Bash", { command: "rm -rf x" }), "deny");
 });
 
+test("tool guard: rm -rf is blocked in command position only", () => {
+  mkdirSync(planDir, { recursive: true });
+  assert.equal(guard("Bash", { command: "cd x && rm -rf build" }), "deny");
+  assert.equal(guard("Bash", { command: "ls; sudo rm -fr build" }), "deny");
+  assert.equal(guard("Bash", { command: "echo 'rm -rf is blocked'" }), "allow");
+  assert.equal(guard("Bash", { command: "git commit -m \"fix rm -rf false positive\"" }), "allow");
+  assert.equal(guard("Bash", { command: "grep -rn \"rm -rf\" hooks" }), "allow");
+});
+
+const fdState = (slugName, ...args) =>
+  spawnSync("node", [join(root, "bin", "fd-state"), ...args], { cwd: project, env: { ...env, FD_SLUG: slugName }, encoding: "utf8" });
+
+test("fd-state: one write renders state.json, STATE.md and checkpoint.json", () => {
+  const r = fdState("st-a", "set", "status=executing", "current_command=fd-execute", "current_stage=EXECUTE", "topic=t", "plan_confirmed=true", "steps_complete=0,1");
+  assert.equal(r.status, 0, r.stderr);
+  fdState("st-a", "set", "steps_complete+=2", "last_wave=1", "topic_branch=null");
+  const dir = join(home, ".fd-plan", "st-a");
+  const st = JSON.parse(readFileSync(join(dir, "state.json"), "utf8"));
+  assert.deepEqual(st.steps_complete, [0, 1, 2]);
+  assert.equal(st.topic_branch, null);
+  const cp = JSON.parse(readFileSync(join(dir, "checkpoint.json"), "utf8"));
+  assert.equal(cp.current_stage, "EXECUTE");
+  assert.equal(cp.last_wave, 1);
+  assert.match(readFileSync(join(dir, "STATE.md"), "utf8"), /^steps_complete: 0,1,2$/m);
+});
+
+test("fd-state: rejects unknown keys and bad values without writing", () => {
+  assert.notEqual(fdState("st-b", "set", "status=bogus").status, 0);
+  assert.notEqual(fdState("st-b", "set", "nope=1").status, 0);
+  assert.notEqual(fdState("st-b", "set", "plan_confirmed=maybe").status, 0);
+  assert.notEqual(fdState("st-b", "set", "project=other").status, 0);
+  assert.equal(fdState("st-b", "get").stdout.trim(), "{}");
+});
+
+test("fd-state: first write imports an existing STATE.md and checkpoint.json", () => {
+  const dir = join(home, ".fd-plan", "st-c");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "STATE.md"), "status: executing\nplan_confirmed: true\ntopic: legacy\nsteps_complete: 0,1\n");
+  writeFileSync(join(dir, "checkpoint.json"), JSON.stringify({ current_command: "fd-execute", current_stage: "EXECUTE", last_wave: 2 }));
+  assert.equal(fdState("st-c", "set", "last_action=x").status, 0);
+  const st = JSON.parse(fdState("st-c", "get").stdout);
+  assert.equal(st.topic, "legacy");
+  assert.deepEqual(st.steps_complete, [0, 1]);
+  assert.equal(st.last_wave, 2);
+  assert.equal(st.current_stage, "EXECUTE");
+});
+
+test("autosave: stamps saved_at in state.json too", () => {
+  fdState(slug, "set", "current_command=fd-execute", "current_stage=EXECUTE");
+  const before = JSON.parse(readFileSync(join(planDir, "state.json"), "utf8")).saved_at;
+  const stale = new Date(0).toISOString();
+  const st = JSON.parse(readFileSync(join(planDir, "state.json"), "utf8"));
+  writeFileSync(join(planDir, "state.json"), JSON.stringify({ ...st, saved_at: stale }));
+  hook("autosave.mjs", {});
+  assert.notEqual(JSON.parse(readFileSync(join(planDir, "state.json"), "utf8")).saved_at, stale);
+  assert.ok(before);
+});
+
 test("version: plugin.json and marketplace.json agree", () => {
   const read = (f) => JSON.parse(readFileSync(join(root, ".claude-plugin", f), "utf8"));
   assert.equal(read("marketplace.json").plugins[0].version, read("plugin.json").version);

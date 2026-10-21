@@ -8,7 +8,7 @@
     {
       "name": "flowdeck",
       "source": "./",
-      "version": "0.2.1",
+      "version": "0.3.1",
       "description": "FlowDeck workflow (fixed pipeline, guarded state) ported to Claude Code."
     }
   ]

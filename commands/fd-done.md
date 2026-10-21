@@ -11,6 +11,8 @@ Close the task: summarize what was built against what was asked, then commit and
 
 **Asking.** Every decision in this command is asked with the `AskUserQuestion` tool, and the text layouts shown are only the fallback for when the tool is unavailable (non-interactive runs) or denied. If `AskUserQuestion` is not in your tool list but `ToolSearch` is, load it first with `ToolSearch` query `select:AskUserQuestion`. Use 2-4 short options, your recommendation first and labelled `(Recommended)`; free text arrives as "Other". A typed answer in the form shown (`Y`, `N`, `CONFIRM`, a revision) is equally valid.
 
+**State writes.** Every change to `STATE.md` or `checkpoint.json` in this command goes through `fd-state`, which is on the Bash PATH while the plugin is enabled: `fd-state set key=value ...` (quote values that contain spaces). It validates the keys and values and renders `state.json`, `STATE.md` and `checkpoint.json` together, so do not edit those files by hand. Where a step below says to update STATE.md or merge into the checkpoint, pass the same keys, leaving out `version`, `project` and `saved_at` (it sets them); append to a list with `steps_complete+=3`. If it rejects a value, fix the value and retry. Only if the `fd-state` command is not found, say so and write the files as the step describes.
+
 ## Step 0: Pre-flight
 
 1. `~/.fd-plan/<slug>/STATE.md` must exist. If not: `No planning workspace. Run /flowdeck:fd-task first.`
@@ -30,7 +32,7 @@ Also stop if `blockers` is non-empty, and list every blocker.
 
 ## Step 2: Summarize built vs required
 
-Read `~/.fd-plan/<slug>/<topic>/task.md` and check every requirement and acceptance criterion against what actually landed.
+Read the Task section of `~/.fd-plan/<slug>/<topic>/plan.md` and check every requirement and acceptance criterion against what actually landed.
 
 Collect the changed files with `git status --short` and `git diff --name-only HEAD`. If a branch base is known, also run `git log --oneline --no-merges <base>..HEAD`.
 
@@ -79,7 +81,7 @@ Wait for the answer. On [2], stop without committing. **Call `AskUserQuestion` n
 
 ## Step 4: Commit message
 
-Propose a Conventional Commits message derived from `task.md`:
+Propose a Conventional Commits message derived from the plan's Task section:
 
 ```
 Proposed commit message:
@@ -126,7 +128,7 @@ If `git commit` fails, report the git error verbatim and do not mark the task co
 
 ## Step 7: Update project architecture
 
-Re-read `~/.fd-plan/<slug>/architecture.md` and compare it with what the task changed (from `affect.md` and the completed steps). If the task added modules, changed the tech stack, added dependencies, or shifted conventions, update the relevant sections only. Do not rewrite the whole file. Log: `Updated ~/.fd-plan/<slug>/architecture.md with changes from <topic>.`
+Re-read `~/.fd-plan/<slug>/architecture.md` and compare it with what the task changed (from the plan's Affect section and the completed steps). If the task added modules, changed the tech stack, added dependencies, or shifted conventions, update the relevant sections only. Do not rewrite the whole file. Log: `Updated ~/.fd-plan/<slug>/architecture.md with changes from <topic>.`
 
 ## Step 8: Close out state
 

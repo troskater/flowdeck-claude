@@ -26,7 +26,7 @@ Pick one source file of the main language and make one `LSP` call on it (documen
 | Swift | `swift-lsp` | `sourcekit-lsp` |
 | Lua | `lua-lsp` | `lua-language-server` |
 
-The plugins come from the `claude-plugins-official` marketplace. Without LSP, FlowDeck falls back to Grep and records that in `affect.md`.
+The plugins come from the `claude-plugins-official` marketplace. Without LSP, FlowDeck falls back to Grep and records that in the plan's Affect section.
 
 ## 3. Git (needed by `security-review`)
 Run `git rev-parse --is-inside-work-tree`, `git remote -v`, and `git rev-parse --verify origin/HEAD`. Report each. If `origin` exists but `origin/HEAD` does not, say that `git remote set-head origin -a` (needs network) or `git remote set-head origin <default-branch>` fixes it. Without `origin/HEAD`, `/flowdeck:fd-verify` marks the Security check NOT RUN.

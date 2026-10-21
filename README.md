@@ -21,15 +21,15 @@ Or load a local checkout for one session: `claude --plugin-dir <path>`. If your 
 
 | Command | What it does |
 |---|---|
-| `fd-task <description>` | Maps the codebase, runs a research gate, asks questions one at a time, and saves `task.md`, `architecture.md`, `affect.md`, `plan.md` after you type CONFIRM |
-| `fd-review` | CEO and engineering review of those artifacts before any code is written |
+| `fd-task <description>` | Maps the codebase, runs a research gate, asks questions one at a time, and saves one `plan.md` (task, architecture, affect, steps) after you type CONFIRM |
+| `fd-review` | CEO and engineering review of that plan before any code is written |
 | `fd-execute` | Implements the plan step by step: behavior, failing test, minimal code, refactor. Offers a local topic branch, commits each wave, and runs the built-in `code-review` after each wave |
 | `fd-verify` | Runs tests, regression scope, the built-in `code-review` and `security-review`. Blocks `fd-done` on failure |
 | `fd-done` | Summarizes built vs required, checks for slop, then commits and pushes only on your yes |
 | `fd-checkpoint`, `fd-resume`, `fd-status` | Save, restore and show an in-flight pipeline |
 | `fd-doctor` | Read-only check of what the steps above need: an active LSP server, `origin/HEAD`, a test runner |
 
-**You type only the first command.** As in upstream FlowDeck there are two approval gates: you CONFIRM the artifacts at the end of `fd-task` (before anything is saved), and you CONFIRM at the end of `fd-review` (before any code is written). After that `fd-execute`, `fd-verify` and `fd-done` run on their own. The pipeline stops if a step fails or verification fails, and `fd-done` still asks about the commit message and permission to push. Use `fd-resume` to pick up after stopping. You can also type any stage yourself; each stage checks its own preconditions, so running one out of order is refused.
+**You type only the first command.** As in upstream FlowDeck there are two approval gates: you CONFIRM the plan at the end of `fd-task` (before anything is saved), and you CONFIRM at the end of `fd-review` (before any code is written). After that `fd-execute`, `fd-verify` and `fd-done` run on their own. The pipeline stops if a step fails or verification fails, and `fd-done` still asks about the commit message and permission to push. Use `fd-resume` to pick up after stopping. You can also type any stage yourself; each stage checks its own preconditions, so running one out of order is refused.
 
 Questions appear as Claude Code's native picker (recommended option first, "Other" for free text); typing `Y`, `CONFIRM` or a revision works too. Where the picker is unavailable, such as `claude -p`, the same questions are asked in plain text. Claude Code has no task-list tool in the versions checked and plan mode is interactive-only, so FlowDeck uses neither; progress lives in `STATE.md` and the ticks in `plan.md`.
 
@@ -41,6 +41,10 @@ Planning state lives in `~/.fd-plan/<project>/` (`STATE.md`, `checkpoint.json`, 
 - **Mapping:** the `fd-map` skill runs in the read-only `flowdeck:mapper` agent, pinned to haiku.
 - **Review:** the bundled `code-review` skill and the built-in `security-review`. Neither is replaced by a home-grown version.
 - **Agents:** nine focused agents (`mapper`, `researcher`, `architect`, `planner`, `coder`, `tester`, `reviewer`, `security-auditor`, `debug-specialist`), each with its own tool list: only `coder` can edit files. The main conversation routes and asks; `fd-execute` sends every step to `coder` (a trivial task is the exception), `fd-verify` uses `tester`, `security-auditor` and, on failure, `debug-specialist` then `coder`, `fd-review` runs two `reviewer` lenses in parallel, and `fd-task` uses `researcher`, `architect` and `planner`. Each subagent starts with a large context of its own.
+- **Parallel waves:** a wave with two or more steps runs through the `fd-execute-wave` workflow (`Workflow` tool, authorized by the command). Steps whose file lists in `plan.md` do not intersect run in parallel through `coder`; sharing a file means running in order. This is the shared checkout, not git worktrees: the file lists are trusted, and the full suite runs after the wave.
+- **State:** `fd-state` (in `bin/`, on the Bash PATH while the plugin is enabled) is the only writer. It validates and renders `state.json`, `STATE.md` and `checkpoint.json` together.
+- **Plan mode:** `fd-task` enters plan mode after mapping the codebase and leaves it with the plan. Approval is the CONFIRM. Not available in `claude -p`; the picker or text CONFIRM is used there.
+- **Output style:** optional `FlowDeck` style (`/output-style`) that keeps the model on `AskUserQuestion` and the agents.
 - **Models:** commands run on your session model; a `model:` in a command or skill does not switch it when stages chain. Agents inherit your session model, except `mapper`, which is pinned to haiku. If your environment sets `CLAUDE_CODE_SUBAGENT_MODEL`, that overrides inheritance. For a pinned main model, start with `claude --agent flowdeck:orchestrator`.
 
 ## Security review needs committed work
@@ -70,7 +74,7 @@ Full tables are in [DIFFERENCES.md](DIFFERENCES.md). In short:
 **Not ported (shortcomings)**
 - Upstream's Rust `fdx` tools and dependency graph. Blast radius uses LSP or text search, and without LSP it misses dynamic imports.
 - 12 upstream skills: eleven that need its state files, tools or a pruning step (`change-impact-radar`, `blast-radius-preview`, `failure-replay-engine`, `self-healing-policies`, `telemetry-steward`, `decision-trace`, `session-persistence`, `context-guard`, `repo-memory-graph`, `context-steward` with its `-triggers` stub), and its `code-review`, left out so it cannot shadow the built-in.
-- Parallel worktree waves (steps run one at a time), `--override`, UI design-first gating, the context-window monitor and desktop notifications.
+- Separate git worktrees per parallel step (parallel waves share the checkout), `--override`, UI design-first gating, the context-window monitor and desktop notifications.
 - Upstream's per-agent model config, and its separate frontend-coder and devops agents (one `coder` here); see Agents and Models above.
 - Review is per wave, not per step, and uses Claude Code's built-in reviews instead of upstream's reviewer and security-auditor prompts.
 - `security-review` sees only committed work and needs `origin/HEAD`.

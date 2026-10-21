@@ -1,11 +1,11 @@
 ---
-description: Define a task end to end — auto-init the workspace, map the codebase, confirm requirements, and save task.md + architecture.md + affect.md + plan.md
+description: Define a task end to end — auto-init the workspace, map the codebase, confirm requirements, and save one plan.md (task, architecture, affect, steps)
 argument-hint: <task description>
 ---
 
 # Task
 
-Pipeline entrypoint. Turns a task description into the four confirmed artifacts every later stage reads.
+Pipeline entrypoint. Turns a task description into the confirmed `plan.md` every later stage reads.
 
 **Input:** $ARGUMENTS — the task description. REQUIRED.
 
@@ -14,6 +14,10 @@ Pipeline entrypoint. Turns a task description into the four confirmed artifacts 
 If `$ARGUMENTS` is empty, ask the user for a task description before doing anything else. Do not guess or infer the task.
 
 Codebase mapping runs in the `fd-map` skill, which uses the read-only `flowdeck:mapper` subagent. Research (Step 2) goes to `flowdeck:researcher`, and the design and plan drafts (Step 4) to `flowdeck:architect` and `flowdeck:planner`. Those agents are read-only and cannot see this conversation: brief each with the task, the evidence and answers so far, the paths it needs and the template it must fill. You write the files, after CONFIRM.
+
+**State writes.** Every change to `STATE.md` or `checkpoint.json` in this command goes through `fd-state`, which is on the Bash PATH while the plugin is enabled: `fd-state set key=value ...` (quote values that contain spaces). It validates the keys and values and renders `state.json`, `STATE.md` and `checkpoint.json` together, so do not edit those files by hand. Where a step below says to update STATE.md or merge into the checkpoint, pass the same keys, leaving out `version`, `project` and `saved_at` (it sets them); append to a list with `steps_complete+=3`. If it rejects a value, fix the value and retry. Only if the `fd-state` command is not found, say so and write the files as the step describes.
+
+**Agent names.** Set the `description` of every `Agent` call to the agent's own name (`researcher`, `coder`, `tester`), numbered when one stage runs several of the same kind (`researcher 1`, `researcher 2`). Do not invent labels such as "CEO lens"; anything about the lens or step goes in the brief.
 
 ## Step 1: Auto-init
 
@@ -33,6 +37,12 @@ If `~/.fd-plan/<slug>/` does not exist:
 If codebase mapping fails, report the failure and stop. A task planned against an unmapped codebase is not trustworthy.
 
 If `~/.fd-plan/<slug>/architecture.md` already exists, do not overwrite it. Read it instead.
+
+## Step 1b: Enter plan mode
+
+With the workspace initialized and mapped, call `EnterPlanMode` (load it first with `ToolSearch` query `select:EnterPlanMode,ExitPlanMode` if it is not in your tool list). Steps 2-4 then run read-only, which suits them: research, questions and the agents' drafts write nothing. `AskUserQuestion` and the read-only agents still work in plan mode. Step 5 ends it with `ExitPlanMode`.
+
+If the tool is missing (non-interactive runs), is refused, or the user declines to enter, carry on without plan mode and use the Step 5 fallback. Do not write `STATE.md`, `checkpoint.json` or `plan.md` until Step 6; they are not needed before it.
 
 ## Step 2: Research gate
 
@@ -55,8 +65,8 @@ Proposed queries:
 
 Do not continue until the user answers. **Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Research`, options `Run these queries (Recommended)`, `Skip research`, `Custom queries`, with the numbered queries in the question text.
 
-- **Y:** send the queries to one foreground `Agent` call with `subagent_type: flowdeck:researcher` (for 4-5 independent queries, split them across parallel calls in the same message), briefed with the task, the queries and the paths of `architecture.md` and the prior `~/.fd-plan/<slug>/*/task.md` files. It follows the `fd-codenav` skill's guidance, reads `CLAUDE.md` / `AGENTS.md` if present, and returns evidence per query. Summarize in 3-5 bullets. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. Then run the queries yourself.
-- **N:** log "Research skipped by user." and add `Note: created without codebase research — may need revision.` under `## Constraints` in task.md.
+- **Y:** send the queries to one foreground `Agent` call with `subagent_type: flowdeck:researcher` (for 4-5 independent queries, split them across parallel calls in the same message), briefed with the task, the queries and the paths of `architecture.md` and the prior `~/.fd-plan/<slug>/*/plan.md` files. It follows the `fd-codenav` skill's guidance, reads `CLAUDE.md` / `AGENTS.md` if present, and returns evidence per query. Summarize in 3-5 bullets. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. Then run the queries yourself.
+- **N:** log "Research skipped by user." and add `Note: created without codebase research — may need revision.` under `### Constraints` in `plan.md`.
 - **C:** ask for the queries one per line, use them exactly as given, then run them as in Y.
 
 ## Step 3: Clarify, one question at a time
@@ -64,127 +74,122 @@ Do not continue until the user answers. **Call `AskUserQuestion` now instead of 
 Ask clarifying questions **one at a time**. Do not batch them. Each is one `AskUserQuestion` call whose options are the realistic answers you found in the code (for example the two plausible behaviors), your recommendation first; an open-ended question has options only if real alternatives exist, otherwise ask it in text.
 
 Skip a question if:
-1. Its answer is already in `architecture.md`, a prior `task.md`, or `STATE.md`
+1. Its answer is already in `architecture.md`, a prior topic's `plan.md`, or `STATE.md`
 2. Its answer follows from the tech stack or existing patterns
 3. It was already answered this session
 
-Record each skipped question and its evidence for `task.md`.
+Record each skipped question and its evidence for the Task section of `plan.md`.
 
 Before proposing a new component, grep for an existing one. If one exists, extend it, and note it under "Alternatives Considered" as `<name> — reused existing <component> instead of building new.`
 
 Cover, in order, skipping what research already settled: scope (and what is out of scope), constraints, acceptance criteria, risks.
 
-## Step 4: Draft the four artifacts
+## Step 4: Draft the plan
 
-Draft all four before showing anything. Every claim must trace to Step 2 evidence or a Step 3 answer. Do not guess.
+Draft the whole plan before showing anything. It is one file, `plan.md`, with four sections. Every claim must trace to Step 2 evidence or a Step 3 answer. Do not guess.
 
-Write `task.md` yourself, since it holds the user's answers. Then call `Agent` with `subagent_type: flowdeck:architect`, briefed with `task.md`, the research bullets, the project `architecture.md` and the `architecture.md` and `affect.md` templates below; it returns both drafts. Then call `Agent` with `subagent_type: flowdeck:planner`, briefed with all three drafts and the `plan.md` template; it returns the plan and the effort estimate. Review what they return against the rules below, fix mismatches, and show all four. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. Then draft that part yourself.
+Write the Task section yourself, since it holds the user's answers. Then call `Agent` with `subagent_type: flowdeck:architect`, briefed with the Task section, the research bullets, the project `architecture.md` and the Architecture and Affect templates below; it returns both sections. Then call `Agent` with `subagent_type: flowdeck:planner`, briefed with the three sections and the Steps and Parallel Safety templates; it returns the steps, the Parallel Safety lists and the effort estimate. Review what they return against the rules below, fix mismatches, and assemble the sections into the template. Delegation is not optional: a small or one-line change is not a reason to do the work yourself, and neither is cost. Fall back only when the `Agent` call itself returned an error, and say so. Then draft that part yourself.
 
-**`task.md`**
-```md
-# Task: <title>
-
-**Created:** <ISO timestamp>
-
-## Requirements
-- R-01: <requirement>
-
-## Out of Scope
-- <item>
-
-## Acceptance Criteria
-- [ ] <verifiable criterion>
-
-## Constraints
-- <constraint>
-
-## Open Questions
-- <item, or "none">
-
-## Suppressed Questions
-- "<question>" → answered by: <evidence source>
-```
-
-**`architecture.md`** (task-level design)
-```md
-# Architecture: <title>
-
-## Approach
-<the chosen design, one paragraph>
-
-## Components
-- <component>: <responsibility>
-
-## Data Flow
-<how the pieces connect>
-
-## Alternatives Considered
-- <alternative> — rejected because <reason>
-```
-
-**`affect.md`** (blast radius)
-```md
-# Affect Analysis
-Generated: <ISO timestamp>
-Source: LSP | Grep (text-based; misses dynamic imports and generated code)
-
-## Affected Files
-- path/to/file (modify|create|delete)
-
-## Affected Systems
-- <system>: <reason>
-
-## Risk Level
-low | medium | high
-
-## Parallel Safety
-### Can Parallel
-- Task A: [file1, file2]
-### Must Sequential
-- Task C (depends on A): [file1, file3]
-```
-
-Find the affected files and their dependents by following the blast-radius procedure in the `fd-codenav` skill, and fill in the `Source:` line honestly. Every task in `plan.md` appears exactly once under Can Parallel or Must Sequential. A task goes under Must Sequential if its files overlap another task's files or it depends on one. Risk is `high` for security, schema or breaking changes, `medium` for shared modules or public API, otherwise `low`.
-
-**`plan.md`**
 ```md
 # Plan: <title>
 
-## Wave 1
+**Created:** <ISO timestamp>
+
+## Task
+
+### Requirements
+- R-01: <requirement>
+
+### Out of Scope
+- <item>
+
+### Acceptance Criteria
+- [ ] <verifiable criterion>
+
+### Constraints
+- <constraint>
+
+### Open Questions
+- <item, or "none">
+
+### Suppressed Questions
+- "<question>" → answered by: <evidence source>
+
+## Architecture
+
+### Approach
+<the chosen design, one paragraph>
+
+### Components
+- <component>: <responsibility>
+
+### Data Flow
+<how the pieces connect>
+
+### Alternatives Considered
+- <alternative> — rejected because <reason>
+
+## Affect
+
+Generated: <ISO timestamp>
+Source: LSP | Grep (text-based; misses dynamic imports and generated code)
+
+### Affected Files
+- path/to/file (modify|create|delete)
+
+### Affected Systems
+- <system>: <reason>
+
+### Risk Level
+low | medium | high
+
+### Parallel Safety
+#### Can Parallel
+- Step A: [file1, file2]
+#### Must Sequential
+- Step C (depends on A): [file1, file3]
+
+## Steps
+
+### Wave 1
 - [ ] Step 1: <action> (traces: R-01) — files: [file1]
 
-## Wave 2
+### Wave 2
 - [ ] Step 2: <action> (traces: R-02) — files: [file1, file3]
 ```
 
+Find the affected files and their dependents by following the blast-radius procedure in the `fd-codenav` skill, and fill in the `Source:` line honestly. Every step appears exactly once under Can Parallel or Must Sequential. A step goes under Must Sequential if its files overlap another step's files or it depends on one. Risk is `high` for security, schema or breaking changes, `medium` for shared modules or public API, otherwise `low`.
+
 Every step traces to at least one `R-XX`. Steps in the same wave do not depend on each other.
 
-**Effort estimate:** 1-3 files, low risk, 1 wave ≈ 30 min. 4-10 files, low/medium, 1-2 waves ≈ 2-4 h. 10+ files, high risk, or 3+ waves ≈ 1 day+. Add 50% if 3+ systems are affected. Show it with the drafts.
+**Effort estimate:** 1-3 files, low risk, 1 wave ≈ 30 min. 4-10 files, low/medium, 1-2 waves ≈ 2-4 h. 10+ files, high risk, or 3+ waves ≈ 1 day+. Add 50% if 3+ systems are affected. Show it with the plan.
 
-**Trivial check.** The task is trivial only if it is a rename, typo, config value or version bump, touches at most 2 files, is `low` risk, has a single wave and changes no behavior. If so, propose the shortcut with the drafts: `fd-task -> fd-execute -> fd-done`, skipping `fd-review` and `fd-verify`, with the reason stated. The user decides; never apply it on your own.
+**Trivial check.** The task is trivial only if it is a rename, typo, config value or version bump, touches at most 2 files, is `low` risk, has a single wave and changes no behavior. If so, propose the shortcut with the plan: `fd-task -> fd-execute -> fd-done`, skipping `fd-review` and `fd-verify`, with the reason stated. The user decides; never apply it on your own.
 
 ## Step 5: Confirm
 
-Present all four drafts, then print:
+**In plan mode** (Step 1b): call `ExitPlanMode` with the whole `plan.md` draft as the plan (all four sections, plus the effort estimate). The user's approval is the CONFIRM. Feedback on a rejected plan is the requested changes: stay in plan mode and return to Step 4. Approval may change the session's permission mode; leave it as the user set it. For a trivial task, once approved, ask with `AskUserQuestion` (header `Pipeline`): `Run the full pipeline (Recommended)` or `Skip review/verify`, which counts as `CONFIRM SKIP`. Then go to Step 6.
+
+**Without plan mode**, present the plan, then print:
 
 ```
-Ready to save these artifacts?
+Ready to save this plan?
 Type CONFIRM to save, or describe changes needed.
 ```
 
 For a trivial task add: `Trivial task: skip fd-review and fd-verify? Type CONFIRM SKIP to save and skip them, CONFIRM to save and run the full pipeline.`
 
-**Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Artifacts`, options `Confirm (Recommended)` and `Request changes` (the changes arrive as "Other" text); for a trivial task a third option `Confirm and skip review/verify`, which counts as `CONFIRM SKIP`. Show the drafts in your message first, since the question text is short.
+**Call `AskUserQuestion` now instead of printing the block above (print it only if the tool is unavailable):** header `Plan`, options `Confirm (Recommended)` and `Request changes` (the changes arrive as "Other" text); for a trivial task a third option `Confirm and skip review/verify`, which counts as `CONFIRM SKIP`. Show the plan in your message first, since the question text is short.
 
 Do not write any file before CONFIRM. On requested changes, return to Step 4.
 
 ## Step 6: Save
 
-Derive `<topic>` as a lowercase, hyphenated slug of the task title. Write `task.md`, `architecture.md`, `affect.md` and `plan.md` to `~/.fd-plan/<slug>/<topic>/`.
+Derive `<topic>` as a lowercase, hyphenated slug of the task title. Write `plan.md` to `~/.fd-plan/<slug>/<topic>/`.
 
-Check that each file exists and contains its required headings. Print what is missing and return to Step 4 if anything is.
+Check that it exists and contains its required headings: `## Task` with `### Requirements` and `### Acceptance Criteria`; `## Architecture` with `### Approach` and `### Components`; `## Affect` with `### Affected Files`, `### Risk Level` and `### Parallel Safety`; `## Steps` with at least one `### Wave`. Print what is missing and return to Step 4 if anything is.
 
-Then update `STATE.md`: `topic: <topic>`, `plan_confirmed: true`, `last_action: Task artifacts confirmed and saved`, `next_action: run /flowdeck:fd-review`. After `CONFIRM SKIP` also set `trivial: true`, `skipped_stages: fd-review, fd-verify`, `skip_reason: <the reason you gave>`, and `next_action: run /flowdeck:fd-execute`.
+Then update `STATE.md`: `topic: <topic>`, `plan_confirmed: true`, `last_action: Plan confirmed and saved`, `next_action: run /flowdeck:fd-review`. After `CONFIRM SKIP` also set `trivial: true`, `skipped_stages: fd-review, fd-verify`, `skip_reason: <the reason you gave>`, and `next_action: run /flowdeck:fd-execute`.
 
 ## Step 7: Update checkpoint
 
@@ -207,8 +212,8 @@ After `CONFIRM SKIP` also add `"trivial": true`.
 
 - Empty `$ARGUMENTS`: ask for the task. Do not guess one.
 - Mapping fails during init: report and stop.
-- User never confirms: write nothing.
+- User never confirms (or rejects the plan): write nothing.
 
 ## Completion
 
-Report the topic slug, the four artifact paths, requirement count, risk level, and the parallel/sequential split. The CONFIRM in Step 5 was the approval gate for this stage. Once the artifacts are saved and the checkpoint is written, continue straight into the review: invoke the Skill tool with skill `flowdeck:fd-review` and carry on with that stage (after `CONFIRM SKIP`, with skill `flowdeck:fd-execute` instead). If validation failed or the user did not CONFIRM, stop here.
+Report the topic slug, the `plan.md` path, requirement count, risk level, and the parallel/sequential split. The CONFIRM in Step 5 was the approval gate for this stage. Once the plan is saved and the checkpoint is written, continue straight into the review: invoke the Skill tool with skill `flowdeck:fd-review` and carry on with that stage (after `CONFIRM SKIP`, with skill `flowdeck:fd-execute` instead). If validation failed or the user did not CONFIRM, stop here.
