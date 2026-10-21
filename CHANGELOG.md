@@ -2,6 +2,18 @@
 
 Every change that reaches users bumps the version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (a test checks they match).
 
+## 0.4.1
+
+Changed
+- The marketplace is renamed from `flowdeck-marketplace` to `flowdeck-claude`, so the plugin installs as `flowdeck@flowdeck-claude`. Commands keep their `/flowdeck:` names. An existing install does not update across the rename. Remove it and install again:
+  ```
+  claude plugin uninstall flowdeck@flowdeck-marketplace
+  claude plugin marketplace remove flowdeck-marketplace
+  claude plugin marketplace add troskater/flowdeck-claude
+  claude plugin install flowdeck@flowdeck-claude
+  ```
+  Your FlowDeck settings were saved under the old name. Set them again in `/config`. Plans and state in `~/.fd-plan/` are not affected.
+
 ## 0.4.0
 
 Added

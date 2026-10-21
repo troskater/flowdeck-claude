@@ -12,10 +12,12 @@ Early port. It works end to end on a small project; some of upstream is not port
 
 ```
 /plugin marketplace add troskater/flowdeck-claude
-/plugin install flowdeck@flowdeck-marketplace
+/plugin install flowdeck@flowdeck-claude
 ```
 
 Or load a local checkout for one session: `claude --plugin-dir <path>`. If your Claude Code surface has no `/plugin`, use `claude plugin marketplace add` and `claude plugin install` in a terminal.
+
+Installed before 0.4.1, when the marketplace was called `flowdeck-marketplace`? Run `/plugin uninstall flowdeck@flowdeck-marketplace` and `/plugin marketplace remove flowdeck-marketplace`, then install as above.
 
 ## Commands
 

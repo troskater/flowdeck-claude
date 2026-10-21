@@ -282,7 +282,7 @@ test("skills: a stage gets its configured skills in order, bad entries are ignor
 test("storage=project: state lives in the project, ignores itself, and the gate follows it", () => {
   const settings = join(home, ".claude", "settings.json");
   mkdirSync(dirname(settings), { recursive: true });
-  writeFileSync(settings, JSON.stringify({ pluginConfigs: { "flowdeck@flowdeck-marketplace": { options: { storage: "project" } } } }));
+  writeFileSync(settings, JSON.stringify({ pluginConfigs: { "flowdeck@flowdeck-claude": { options: { storage: "project" } } } }));
   const r = spawnSync("node", [join(root, "bin", "fd-state"), "set", "current_command=fd-task", "current_stage=in_progress"], { cwd: project, env, encoding: "utf8" });
   assert.equal(r.status, 0, r.stderr);
   const local = join(project, ".fd-plan");
