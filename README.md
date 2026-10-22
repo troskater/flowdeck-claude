@@ -47,8 +47,9 @@ Set these in `/config` (or when you enable the plugin). They are stored as the p
 | Per-agent overrides (`models`) | e.g. `coder=opus,mapper=haiku`. Agents: the nine below; models: `haiku`, `sonnet`, `opus`, `fable`. | empty |
 | Storage (`storage`) | `home`: `~/.fd-plan/<project>/`. `project`: `<project>/.fd-plan/`, which gets its own `.gitignore` (`*`); delete that file if you want to commit your plans. | `home` |
 | Extra skills per stage (`stage_skills`) | e.g. `review=ponytail:ponytail-audit,verify=simplify`. Stages: `task` (before the plan CONFIRM), `review` (before the findings report), `execute` (after the last wave), `verify` (before the report), `done` (before the commit message). Repeat a stage for more than one skill. | empty |
+| Auto-approve extra skills (`stage_skills_auto`) | Run extra skills without the approve and proceed questions. | off |
 
-No agent ever runs above your session model: overrides and profiles are capped at it. `fd-state models <your model>` prints what each agent will get. Extra skills run in the main conversation through the Skill tool. Their findings go in an `Extra skills (advisory)` section of the stage's report and never block it, and the edit gate still applies to them. `fd-state skills <stage>` lists what a stage will run. Switching storage does not move existing state; move the folder yourself if you want to keep an open pipeline.
+No agent ever runs above your session model: overrides and profiles are capped at it. `fd-state models <your model>` prints what each agent will get. Extra skills run in the main conversation through the Skill tool. The stage asks before each one runs and again after its output (turn on `stage_skills_auto` to skip the questions); findings go in an `Extra skills (advisory)` section of the stage's report and never block it, and the edit gate still applies to them. `fd-state skills <stage>` lists what a stage will run. Switching storage does not move existing state; move the folder yourself if you want to keep an open pipeline.
 
 ## What it uses from Claude Code
 

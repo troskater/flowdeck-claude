@@ -1,6 +1,6 @@
 {
   "name": "flowdeck",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "FlowDeck workflow (fixed pipeline, guarded state) ported to Claude Code.",
   "author": {
     "name": "DVNghiem, troskater"
@@ -31,8 +31,14 @@
     "stage_skills": {
       "type": "string",
       "title": "Extra skills per stage",
-      "description": "Optional skills a stage runs at a fixed point, e.g. review=ponytail:ponytail-audit,verify=simplify. Stages: task, review, execute, verify, done; repeat a stage for more than one skill. Findings are reported as advisory and never block the stage.",
+      "description": "Optional skills a stage runs at a fixed point, e.g. review=ponytail:ponytail-audit,verify=simplify. Stages: task, review, execute, verify, done; repeat a stage for more than one skill. The stage asks before each skill runs and again after it, and its findings never block the stage.",
       "default": ""
+    },
+    "stage_skills_auto": {
+      "type": "boolean",
+      "title": "Auto-approve extra skills",
+      "description": "Run extra skills without asking before and after each one. Output is still shown.",
+      "default": false
     }
   }
 }

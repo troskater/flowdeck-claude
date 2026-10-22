@@ -279,6 +279,12 @@ test("skills: a stage gets its configured skills in order, bad entries are ignor
   assert.notEqual(skills("bogus", value).status, 0);
 });
 
+test("skills-auto: false by default, true when the setting is on", () => {
+  const auto = (v) => spawnSync("node", [join(root, "bin", "fd-state"), "skills-auto"], { cwd: project, env: { ...env, CLAUDE_PLUGIN_OPTION_STAGE_SKILLS_AUTO: v }, encoding: "utf8" }).stdout.trim();
+  assert.equal(auto(""), "false");
+  assert.equal(auto("true"), "true");
+});
+
 test("storage=project: state lives in the project, ignores itself, and the gate follows it", () => {
   const settings = join(home, ".claude", "settings.json");
   mkdirSync(dirname(settings), { recursive: true });

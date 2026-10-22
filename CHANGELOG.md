@@ -2,6 +2,12 @@
 
 Every change that reaches users bumps the version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (a test checks they match).
 
+## 0.5.0
+
+Changed
+- Extra skills per stage are now an optional step. The stage asks "Run <skill> now?" (Run, Skip, Skip all remaining), shows the skill's full output as chat text, then asks how to proceed (Continue, Address findings, Stop here). Stop here saves a checkpoint so `/flowdeck:fd-resume` continues. The protocol lives once in `rules/extra-skills.md`; the five stage commands point to it.
+- New setting `stage_skills_auto` ("Auto-approve extra skills"): runs them without the questions. Output is still shown. `fd-state skills-auto` prints its value.
+
 ## 0.4.2
 
 Fixed

@@ -170,7 +170,7 @@ Every step traces to at least one `R-XX`. Steps in the same wave do not depend o
 
 ## Step 4b: Extra skills
 
-Run `fd-state skills task`. It prints the extra skills the user configured for this stage (`/config`, "Extra skills per stage"), one per line; nothing printed means none. Invoke each one in order with the Skill tool, passing the topic and the path of its `plan.md` as args. Run them after the drafts are assembled and before the CONFIRM, so the user sees the findings before approving; show the section with the plan in Step 5. Always include a section `Extra skills (advisory)` in the report, even when none are configured. Its first line is `Configured: <skills from fd-state skills task>` or `Configured: none`, so the user can see this step ran; when none are configured, stop there. Otherwise add one line per finding with the skill name. These findings never block the stage or change its outcome. If a skill is not installed, errors, or is blocked by the edit gate, say so in that section and carry on.
+Run `fd-state skills task` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills after the drafts are assembled and before the CONFIRM, so the user sees the findings before approving; show the report section with the plan in Step 5. Address findings: amend `plan.md`, then continue.
 
 ## Step 5: Confirm
 

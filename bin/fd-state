@@ -6,7 +6,8 @@
 //   fd-state path                                 print this project's FlowDeck directory
 //   fd-state models <main model>                  print agent=model pairs from the model settings
 //   fd-state skills <stage>                       print the extra skills that stage runs, one per line
-//   fd-state --help                               valid keys and values
+//   fd-state skills-auto                          print true when extra skills run without asking
+//   fd-state --help                              valid keys and values
 // Values parse as JSON when they can (true, 3, null, ["a"]), else stay strings. `key+=v` appends to a list.
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from "node:fs";
 import { join, basename } from "node:path";
@@ -135,6 +136,8 @@ if (cmd === "set") {
   const { skills, ignored } = stageSkills(rest[0] ?? "", option("stage_skills", root));
   if (ignored.length) process.stderr.write(`fd-state: ignored stage skills ${ignored.join(", ")} (use stage=skill, stage one of task|review|execute|verify|done)\n`);
   if (skills.length) console.log(skills.join("\n"));
+} else if (cmd === "skills-auto") {
+  console.log(String(option("stage_skills_auto", root)) === "true");
 } else {
   console.log(`usage: fd-state set key=value ... | fd-state get [key] | fd-state path | fd-state models <main model> | fd-state skills <stage>\nkeys: ${KEYS.join(", ")}\n${Object.entries(ENUMS).map(([k, v]) => `${k}: ${v.join("|")}`).join("\n")}`);
   process.exit(cmd === "--help" ? 0 : 1);

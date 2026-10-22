@@ -134,7 +134,7 @@ Keep `current_stage: EXECUTE` until verification starts, so the gate stays open 
 
 ## Step 5b: Extra skills
 
-Run `fd-state skills execute`. It prints the extra skills the user configured for this stage (`/config`, "Extra skills per stage"), one per line; nothing printed means none. Invoke each one in order with the Skill tool, passing the topic and the path of its `plan.md` as args. Run them once, after the last wave's review and before finishing. The gate is open here, but a skill must not change code outside the plan: report the changes it proposes instead of applying them, unless the user asks. Always include a section `Extra skills (advisory)` in the report, even when none are configured. Its first line is `Configured: <skills from fd-state skills execute>` or `Configured: none`, so the user can see this step ran; when none are configured, stop there. Otherwise add one line per finding with the skill name. These findings never block the stage or change its outcome. If a skill is not installed or errors, say so in that section and carry on.
+Run `fd-state skills execute` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills once, after the last wave's review and before finishing. The gate is open here. Address findings: hand each one to `flowdeck:coder` as a fix step, then re-run the tests.
 
 ## Step 6: Finish
 
