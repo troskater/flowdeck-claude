@@ -134,13 +134,13 @@ Keep `current_stage: EXECUTE` until verification starts, so the gate stays open 
 
 ## Step 5b: Extra skills
 
-Run `fd-state skills execute` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills once, after the last wave's review and before finishing. The gate is open here. Address findings: hand each one to `flowdeck:coder` as a fix step, then re-run the tests.
+**Required on every run, even when you expect nothing is configured; never skip it:** run `fd-state skills execute` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills once, after the last wave's review and before finishing. The gate is open here. Address findings: hand each one to `flowdeck:coder` as a fix step, then re-run the tests.
 
 ## Step 6: Finish
 
 When every step is complete, update STATE.md: `status: executed`, `next_action: run /flowdeck:fd-verify`.
 
-Report: steps implemented, test status, review findings, and files changed. The plan was approved at the end of `fd-review`, so there is no further gate. When every step is complete and the last wave's review is clean, invoke the Skill tool with skill `flowdeck:fd-verify` and carry on with that stage. For a trivial task (`trivial: true`), run the test suite once instead, and if it passes set STATE.md `status: verified` and `verified_by: trivial skip` and invoke `flowdeck:fd-done`; if it fails, stop and report. If a step failed or any step is still incomplete, stop and report instead.
+Report: steps implemented, test status, review findings, files changed, and an `Extra skills: Configured: <skills or none>` line. The plan was approved at the end of `fd-review`, so there is no further gate. When every step is complete and the last wave's review is clean, invoke the Skill tool with skill `flowdeck:fd-verify` and carry on with that stage. For a trivial task (`trivial: true`), run the test suite once instead, and if it passes set STATE.md `status: verified` and `verified_by: trivial skip` and invoke `flowdeck:fd-done`; if it fails, stop and report. If a step failed or any step is still incomplete, stop and report instead.
 
 ## Error handling
 

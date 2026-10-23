@@ -96,7 +96,7 @@ If the Security check was chosen but cannot run, its status is **NOT RUN** and t
 
 ## Step 4b: Extra skills
 
-Run `fd-state skills verify` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills after the checks in Steps 1-4; add the report section to the Step 5 report. They do not change the verdict. Address findings: hand each one to `flowdeck:coder` as a fix step, then re-run the tests (outside the automatic fix loop).
+**Required on every run, even when you expect nothing is configured; never skip it:** run `fd-state skills verify` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills after the checks in Steps 1-4; add the report section to the Step 5 report. They do not change the verdict. Address findings: hand each one to `flowdeck:coder` as a fix step, then re-run the tests (outside the automatic fix loop).
 
 ## Step 5: Report
 
@@ -113,6 +113,7 @@ VERIFICATION: <topic>
 | Code review  | PASS / FAIL       | [summary]          |
 | Security     | PASS / FAIL / NOT RUN / SKIPPED | [summary] |
 
+Extra skills: Configured: <skills or none> — <ran / skipped / failed, one line each>
 Verdict: VERIFIED | VERIFIED (security skipped) | NOT VERIFIED
 ════════════════════════════════════════════════════
 ```

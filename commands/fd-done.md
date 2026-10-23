@@ -83,7 +83,7 @@ Wait for the answer. On [2], stop without committing. **Call `AskUserQuestion` n
 
 ## Step 3b: Extra skills
 
-Run `fd-state skills done` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills after the slop check and before the commit message, so the user sees the findings before committing. Offer only Continue and Stop here (no Address findings).
+**Required on every run, even when you expect nothing is configured; never skip it:** run `fd-state skills done` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills after the slop check and before the commit message, so the user sees the findings before committing. Offer only Continue and Stop here (no Address findings).
 
 ## Step 4: Commit message
 

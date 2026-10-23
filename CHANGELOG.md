@@ -2,6 +2,11 @@
 
 Every change that reaches users bumps the version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (a test checks they match).
 
+## 0.5.1
+
+Fixed
+- Extra skills were silently skipped in pipeline runs: the stage commands never ran `fd-state skills <stage>` because the step was a plain paragraph no report mentioned. The step is now marked required on every run, and the review, verify, execute and task reports carry an `Extra skills: Configured: ...` line.
+
 ## 0.5.0
 
 Changed

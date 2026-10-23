@@ -170,7 +170,7 @@ Every step traces to at least one `R-XX`. Steps in the same wave do not depend o
 
 ## Step 4b: Extra skills
 
-Run `fd-state skills task` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills after the drafts are assembled and before the CONFIRM, so the user sees the findings before approving; show the report section with the plan in Step 5. Address findings: amend `plan.md`, then continue.
+**Required on every run, even when you expect nothing is configured; never skip it:** run `fd-state skills task` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills after the drafts are assembled and before the CONFIRM, so the user sees the findings before approving; show the report section with the plan in Step 5. Address findings: amend `plan.md`, then continue.
 
 ## Step 5: Confirm
 
@@ -221,4 +221,4 @@ After `CONFIRM SKIP` also add `"trivial": true`.
 
 ## Completion
 
-Report the topic slug, the `plan.md` path, requirement count, risk level, and the parallel/sequential split. The CONFIRM in Step 5 was the approval gate for this stage. Once the plan is saved and the checkpoint is written, continue straight into the review: invoke the Skill tool with skill `flowdeck:fd-review` and carry on with that stage (after `CONFIRM SKIP`, with skill `flowdeck:fd-execute` instead). If validation failed or the user did not CONFIRM, stop here.
+Report the topic slug, the `plan.md` path, requirement count, risk level, the parallel/sequential split, and an `Extra skills: Configured: <skills or none>` line. The CONFIRM in Step 5 was the approval gate for this stage. Once the plan is saved and the checkpoint is written, continue straight into the review: invoke the Skill tool with skill `flowdeck:fd-review` and carry on with that stage (after `CONFIRM SKIP`, with skill `flowdeck:fd-execute` instead). If validation failed or the user did not CONFIRM, stop here.

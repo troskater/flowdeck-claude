@@ -59,7 +59,7 @@ Be direct. If the premise is weak, say so plainly rather than hedging.
 
 ## Step 3b: Extra skills
 
-Run `fd-state skills review` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills after both lenses return; add the report section to the Step 4 report after the lens findings. Address findings: amend `plan.md`, then continue.
+**Required on every run, even when you expect nothing is configured; never skip it:** run `fd-state skills review` and follow ${CLAUDE_PLUGIN_ROOT}/rules/extra-skills.md. Run the skills after both lenses return; add the report section to the Step 4 report after the lens findings. Address findings: amend `plan.md`, then continue.
 
 ## Step 4: Surface findings
 
@@ -85,6 +85,7 @@ ENG LENS
 ────────────────────────────────────────────────────
 Blocking findings: <N>
 Advisory findings: <N>
+Extra skills: Configured: <skills or none> — <ran / skipped / failed, one line each>
 ════════════════════════════════════════════════════
 ```
 
